@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Camera, CheckCircle2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
@@ -15,6 +15,14 @@ import type { CachedSite, DraftPhoto, PhotoType } from "@/lib/types";
 import { makeClientId } from "@/lib/utils";
 
 export default function NewAssetPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewAssetPageContent />
+    </Suspense>
+  );
+}
+
+function NewAssetPageContent() {
   const searchParams = useSearchParams();
   const selectedSiteId = searchParams.get("siteId") ?? "";
 

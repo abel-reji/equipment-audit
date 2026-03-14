@@ -2,7 +2,7 @@
 
 import { Mail } from "lucide-react";
 import type { FormEvent } from "react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { markOfflineAccessGranted } from "@/components/auth-gate";
@@ -10,6 +10,14 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import { signInSchema } from "@/lib/validation";
 
 export default function SignInPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignInPageContent />
+    </Suspense>
+  );
+}
+
+function SignInPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
