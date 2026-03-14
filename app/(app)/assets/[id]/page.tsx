@@ -64,6 +64,7 @@ export default function AssetDetailPage({
   const [sites, setSites] = useState<Array<{ id: string; serverId?: string; name: string }>>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [form, setForm] = useState<AssetDetailFormState>({
     siteId: "",
     equipmentType: "pump",
@@ -168,38 +169,22 @@ export default function AssetDetailPage({
   const detailStatus = detailAsset?.capture_status ?? localDraft?.captureStatus ?? "queued";
 
   async function handleSaveEdits() {
-    const localId = localDraft?.id ?? params.id;
-    const selectedSite = sites.find((site) => site.id === form.siteId || site.serverId === form.siteId);
-    const nextLocalStatus =
-      localDraft?.serverId || serverAsset?.asset.id
-        ? navigator.onLine
-          ? "queued"
-          : "local-only"
-        : localDraft?.captureStatus ?? "queued";
+    try {
+      setSaveError("");
+      const localId = localDraft?.id ?? params.id;
+      const selectedSite = sites.find((site) => site.id === form.siteId || site.serverId === form.siteId);
+      const nextLocalStatus =
+        localDraft?.serverId || serverAsset?.asset.id
+          ? navigator.onLine
+            ? "queued"
+            : "local-only"
+          : localDraft?.captureStatus ?? "queued";
 
-    await updateAssetDraft(localId, {
-      siteId: selectedSite?.id ?? form.siteId,
-      siteServerId: selectedSite?.serverId,
-      equipmentType: form.equipmentType as AssetDraft["equipmentType"],
-      equipmentTag: form.equipmentTag,
-      manufacturer: form.manufacturer,
-      model: form.model,
-      serial: form.serial,
-      serviceApplication: form.serviceApplication,
-      status: form.status,
-      temporaryIdentifier: form.temporaryIdentifier,
-      quickNote: form.quickNote,
-      driver: form.driver,
-      coupling: form.coupling
-    });
-
-    if (navigator.onLine && (localDraft?.serverId || serverAsset?.asset.id)) {
-      const response = await fetch(`/api/assets/${encodeURIComponent(serverAsset?.asset.id ?? localDraft?.serverId ?? params.id)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          siteId: selectedSite?.serverId,
-          equipmentType: form.equipmentType,
+      if (localDraft) {
+        await updateAssetDraft(localId, {
+          siteId: selectedSite?.id ?? form.siteId,
+          siteServerId: selectedSite?.serverId,
+          equipmentType: form.equipmentType as AssetDraft["equipmentType"],
           equipmentTag: form.equipmentTag,
           manufacturer: form.manufacturer,
           model: form.model,
@@ -210,21 +195,18 @@ export default function AssetDetailPage({
           quickNote: form.quickNote,
           driver: form.driver,
           coupling: form.coupling
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error("Unable to update asset");
+        });
+      } else if (!navigator.onLine) {
+        throw new Error("This asset is not cached locally. Reconnect before saving changes.");
       }
-    }
 
-    setLocalDraft((current) =>
-      current
-        ? {
-            ...current,
-            siteId: selectedSite?.id ?? form.siteId,
-            siteServerId: selectedSite?.serverId,
-            equipmentType: form.equipmentType as AssetDraft["equipmentType"],
+      if (navigator.onLine && (localDraft?.serverId || serverAsset?.asset.id)) {
+        const response = await fetch(`/api/assets/${encodeURIComponent(serverAsset?.asset.id ?? localDraft?.serverId ?? params.id)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            siteId: selectedSite?.serverId,
+            equipmentType: form.equipmentType,
             equipmentTag: form.equipmentTag,
             manufacturer: form.manufacturer,
             model: form.model,
@@ -234,72 +216,100 @@ export default function AssetDetailPage({
             temporaryIdentifier: form.temporaryIdentifier,
             quickNote: form.quickNote,
             driver: form.driver,
-            coupling: form.coupling,
-            captureStatus: nextLocalStatus,
-            updatedAt: new Date().toISOString()
-          }
-        : current
-    );
-    setServerAsset((current) =>
-      current
-        ? {
-            ...current,
-            asset: {
-              ...current.asset,
-              equipment_type: form.equipmentType as AssetDraft["equipmentType"],
-              equipment_tag: form.equipmentTag || null,
-              manufacturer: form.manufacturer || null,
-              model: form.model || null,
-              serial: form.serial || null,
-              service_application: form.serviceApplication || null,
+            coupling: form.coupling
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error("Unable to update asset");
+        }
+      }
+
+      setLocalDraft((current) =>
+        current
+          ? {
+              ...current,
+              siteId: selectedSite?.id ?? form.siteId,
+              siteServerId: selectedSite?.serverId,
+              equipmentType: form.equipmentType as AssetDraft["equipmentType"],
+              equipmentTag: form.equipmentTag,
+              manufacturer: form.manufacturer,
+              model: form.model,
+              serial: form.serial,
+              serviceApplication: form.serviceApplication,
               status: form.status,
-              temporary_identifier: form.temporaryIdentifier || null,
-              quick_note: form.quickNote || null
-            },
-            driver: hasDriverValues(form.driver)
-              ? {
-                  ...(current.driver ?? {
-                    id: "local-driver",
-                    account_id: current.asset.account_id,
-                    asset_id: current.asset.id,
-                    created_at: current.asset.created_at,
-                    updated_at: new Date().toISOString()
-                  }),
-                  motor_oem: form.driver.motorOem || null,
-                  motor_model: form.driver.motorModel || null,
-                  hp: form.driver.hp || null,
-                  rpm: form.driver.rpm || null,
-                  voltage: form.driver.voltage || null,
-                  frame: form.driver.frame || null
-                }
-              : null,
-            coupling: hasCouplingValues(form.coupling)
-              ? {
-                  ...(current.coupling ?? {
-                    id: "local-coupling",
-                    account_id: current.asset.account_id,
-                    asset_id: current.asset.id,
-                    created_at: current.asset.created_at,
-                    updated_at: new Date().toISOString()
-                  }),
-                  oem: form.coupling.oem || null,
-                  coupling_type: form.coupling.couplingType || null,
-                  size: form.coupling.size || null,
-                  spacer: form.coupling.spacer || null,
-                  notes: form.coupling.notes || null
-                }
-              : null,
-            site: selectedSite?.serverId === current.site.id
-              ? current.site
-              : {
-                  ...current.site,
-                  id: selectedSite?.serverId ?? current.site.id,
-                  name: selectedSite?.name ?? current.site.name
-                }
-          }
-        : current
-    );
-    setIsEditing(false);
+              temporaryIdentifier: form.temporaryIdentifier,
+              quickNote: form.quickNote,
+              driver: form.driver,
+              coupling: form.coupling,
+              captureStatus: nextLocalStatus,
+              updatedAt: new Date().toISOString()
+            }
+          : current
+      );
+      setServerAsset((current) =>
+        current
+          ? {
+              ...current,
+              asset: {
+                ...current.asset,
+                equipment_type: form.equipmentType as AssetDraft["equipmentType"],
+                equipment_tag: form.equipmentTag || null,
+                manufacturer: form.manufacturer || null,
+                model: form.model || null,
+                serial: form.serial || null,
+                service_application: form.serviceApplication || null,
+                status: form.status,
+                temporary_identifier: form.temporaryIdentifier || null,
+                quick_note: form.quickNote || null
+              },
+              driver: hasDriverValues(form.driver)
+                ? {
+                    ...(current.driver ?? {
+                      id: "local-driver",
+                      account_id: current.asset.account_id,
+                      asset_id: current.asset.id,
+                      created_at: current.asset.created_at,
+                      updated_at: new Date().toISOString()
+                    }),
+                    motor_oem: form.driver.motorOem || null,
+                    motor_model: form.driver.motorModel || null,
+                    hp: form.driver.hp || null,
+                    rpm: form.driver.rpm || null,
+                    voltage: form.driver.voltage || null,
+                    frame: form.driver.frame || null
+                  }
+                : null,
+              coupling: hasCouplingValues(form.coupling)
+                ? {
+                    ...(current.coupling ?? {
+                      id: "local-coupling",
+                      account_id: current.asset.account_id,
+                      asset_id: current.asset.id,
+                      created_at: current.asset.created_at,
+                      updated_at: new Date().toISOString()
+                    }),
+                    oem: form.coupling.oem || null,
+                    coupling_type: form.coupling.couplingType || null,
+                    size: form.coupling.size || null,
+                    spacer: form.coupling.spacer || null,
+                    notes: form.coupling.notes || null
+                  }
+                : null,
+              site: selectedSite?.serverId === current.site.id
+                ? current.site
+                : {
+                    ...current.site,
+                    id: selectedSite?.serverId ?? current.site.id,
+                    name: selectedSite?.name ?? current.site.name
+                  }
+            }
+          : current
+      );
+      setIsEditing(false);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Unable to save changes");
+    }
   }
 
   async function handleDeleteAsset() {
@@ -711,6 +721,10 @@ export default function AssetDetailPage({
                 </>
               )}
             </div>
+
+            {saveError ? (
+              <p className="mt-4 rounded-2xl bg-mist px-4 py-3 text-sm text-slate">{saveError}</p>
+            ) : null}
           </section>
 
           <section className="panel p-5 md:p-6">
