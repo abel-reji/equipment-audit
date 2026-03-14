@@ -17,6 +17,30 @@ export type EquipmentType =
   | "blower"
   | "other";
 
+export type AssetStatus =
+  | "active"
+  | "spare"
+  | "removed"
+  | "unknown"
+  | "needs-review";
+
+export interface AssetDriverDetails {
+  motorOem?: string;
+  motorModel?: string;
+  hp?: string;
+  rpm?: string;
+  voltage?: string;
+  frame?: string;
+}
+
+export interface AssetCouplingDetails {
+  oem?: string;
+  couplingType?: string;
+  size?: string;
+  spacer?: string;
+  notes?: string;
+}
+
 export interface AccountRecord {
   id: string;
   auth_user_id: string;
@@ -57,9 +81,40 @@ export interface AssetRecord {
   equipment_tag: string | null;
   equipment_type: EquipmentType;
   manufacturer: string | null;
+  model: string | null;
+  serial: string | null;
+  service_application: string | null;
+  status: AssetStatus;
   quick_note: string | null;
   capture_status: SyncStatus;
   captured_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AssetDriverRecord {
+  id: string;
+  account_id: string;
+  asset_id: string;
+  motor_oem: string | null;
+  motor_model: string | null;
+  hp: string | null;
+  rpm: string | null;
+  voltage: string | null;
+  frame: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AssetCouplingRecord {
+  id: string;
+  account_id: string;
+  asset_id: string;
+  oem: string | null;
+  coupling_type: string | null;
+  size: string | null;
+  spacer: string | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -110,8 +165,14 @@ export interface AssetDraft {
   equipmentType: EquipmentType;
   equipmentTag?: string;
   manufacturer?: string;
+  model?: string;
+  serial?: string;
+  serviceApplication?: string;
+  status?: AssetStatus;
   quickNote?: string;
   temporaryIdentifier?: string;
+  driver?: AssetDriverDetails;
+  coupling?: AssetCouplingDetails;
   captureStatus: SyncStatus;
   photoCount: number;
   createdAt: string;
@@ -153,6 +214,7 @@ export interface AssetSummary {
   asset: AssetRecord;
   site: SiteRecord;
   customer?: CustomerRecord;
+  driver?: AssetDriverRecord | null;
+  coupling?: AssetCouplingRecord | null;
   photos: Array<AssetPhotoRecord & { signedUrl?: string }>;
 }
-

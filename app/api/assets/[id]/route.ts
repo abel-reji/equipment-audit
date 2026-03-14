@@ -2,7 +2,20 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireSessionAccount } from "@/lib/account";
+import { assetStatusOptions, equipmentTypeOptions } from "@/lib/constants";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+function hasValues(record?: Record<string, string | undefined>) {
+  return Boolean(record && Object.values(record).some((value) => value && value.trim().length > 0));
+}
+
+function relationToSingle<T>(value: T | T[] | null | undefined) {
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value ?? null;
+}
 
 export async function GET(
   _: Request,
@@ -14,7 +27,7 @@ export async function GET(
 
     const { data: asset, error: assetError } = await supabase
       .from("assets")
-      .select("*, sites(*, customers(*))")
+      .select("*, sites(*, customers(*)), asset_drivers(*), asset_couplings(*)")
       .eq("id", params.id)
       .single();
 
@@ -49,6 +62,8 @@ export async function GET(
       asset,
       site: asset.sites,
       customer: asset.sites?.customers,
+      driver: relationToSingle(asset.asset_drivers),
+      coupling: relationToSingle(asset.asset_couplings),
       photos: withSignedUrls
     });
   } catch (error) {
@@ -64,13 +79,34 @@ const patchSchema = z.object({
     .enum(["local-only", "queued", "syncing", "partial", "synced", "failed"])
     .optional(),
   siteId: z.string().uuid().optional(),
-  equipmentType: z
-    .enum(["pump", "compressor", "motor", "gearbox", "fan", "blower", "other"])
-    .optional(),
+  equipmentType: z.enum(equipmentTypeOptions).optional(),
   equipmentTag: z.string().max(120).optional(),
   manufacturer: z.string().max(120).optional(),
+  model: z.string().max(120).optional(),
+  serial: z.string().max(120).optional(),
+  serviceApplication: z.string().max(160).optional(),
+  status: z.enum(assetStatusOptions).optional(),
   temporaryIdentifier: z.string().max(120).optional(),
-  quickNote: z.string().max(800).optional()
+  quickNote: z.string().max(800).optional(),
+  driver: z
+    .object({
+      motorOem: z.string().max(120).optional(),
+      motorModel: z.string().max(120).optional(),
+      hp: z.string().max(40).optional(),
+      rpm: z.string().max(40).optional(),
+      voltage: z.string().max(40).optional(),
+      frame: z.string().max(40).optional()
+    })
+    .optional(),
+  coupling: z
+    .object({
+      oem: z.string().max(120).optional(),
+      couplingType: z.string().max(120).optional(),
+      size: z.string().max(80).optional(),
+      spacer: z.string().max(80).optional(),
+      notes: z.string().max(500).optional()
+    })
+    .optional()
 });
 
 export async function PATCH(
@@ -80,7 +116,7 @@ export async function PATCH(
   try {
     const body = patchSchema.parse(await request.json());
     const supabase = createServerSupabaseClient();
-    await requireSessionAccount(supabase);
+    const { account } = await requireSessionAccount(supabase);
 
     const updatePayload: Record<string, string | null> = {};
 
@@ -99,6 +135,18 @@ export async function PATCH(
     if (body.manufacturer !== undefined) {
       updatePayload.manufacturer = body.manufacturer || null;
     }
+    if (body.model !== undefined) {
+      updatePayload.model = body.model || null;
+    }
+    if (body.serial !== undefined) {
+      updatePayload.serial = body.serial || null;
+    }
+    if (body.serviceApplication !== undefined) {
+      updatePayload.service_application = body.serviceApplication || null;
+    }
+    if (body.status !== undefined) {
+      updatePayload.status = body.status;
+    }
     if (body.temporaryIdentifier !== undefined) {
       updatePayload.temporary_identifier = body.temporaryIdentifier || null;
     }
@@ -106,13 +154,76 @@ export async function PATCH(
       updatePayload.quick_note = body.quickNote || null;
     }
 
-    const { error } = await supabase
-      .from("assets")
-      .update(updatePayload)
-      .eq("id", params.id);
+    if (Object.keys(updatePayload).length > 0) {
+      const { error } = await supabase
+        .from("assets")
+        .update(updatePayload)
+        .eq("id", params.id);
 
-    if (error) {
-      throw error;
+      if (error) {
+        throw error;
+      }
+    }
+
+    if (body.driver !== undefined) {
+      if (hasValues(body.driver)) {
+        const { error: driverError } = await supabase.from("asset_drivers").upsert(
+          {
+            asset_id: params.id,
+            account_id: account.id,
+            motor_oem: body.driver.motorOem || null,
+            motor_model: body.driver.motorModel || null,
+            hp: body.driver.hp || null,
+            rpm: body.driver.rpm || null,
+            voltage: body.driver.voltage || null,
+            frame: body.driver.frame || null
+          },
+          { onConflict: "asset_id" }
+        );
+
+        if (driverError) {
+          throw driverError;
+        }
+      } else {
+        const { error: driverDeleteError } = await supabase
+          .from("asset_drivers")
+          .delete()
+          .eq("asset_id", params.id);
+
+        if (driverDeleteError) {
+          throw driverDeleteError;
+        }
+      }
+    }
+
+    if (body.coupling !== undefined) {
+      if (hasValues(body.coupling)) {
+        const { error: couplingError } = await supabase.from("asset_couplings").upsert(
+          {
+            asset_id: params.id,
+            account_id: account.id,
+            oem: body.coupling.oem || null,
+            coupling_type: body.coupling.couplingType || null,
+            size: body.coupling.size || null,
+            spacer: body.coupling.spacer || null,
+            notes: body.coupling.notes || null
+          },
+          { onConflict: "asset_id" }
+        );
+
+        if (couplingError) {
+          throw couplingError;
+        }
+      } else {
+        const { error: couplingDeleteError } = await supabase
+          .from("asset_couplings")
+          .delete()
+          .eq("asset_id", params.id);
+
+        if (couplingDeleteError) {
+          throw couplingDeleteError;
+        }
+      }
     }
 
     return NextResponse.json({ ok: true });

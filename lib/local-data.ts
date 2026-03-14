@@ -160,7 +160,7 @@ export async function saveAssetDraft(
     updatedAt: nowIso()
   };
 
-  await db.assetDrafts.put(draft);
+    await db.assetDrafts.put(draft);
   const photos = await db.draftPhotos.where("assetDraftId").equals(draft.id).toArray();
   await Promise.all(
     photos.map((photo) =>
@@ -223,8 +223,14 @@ export async function updateAssetDraft(
       | "equipmentType"
       | "equipmentTag"
       | "manufacturer"
+      | "model"
+      | "serial"
+      | "serviceApplication"
+      | "status"
       | "quickNote"
       | "temporaryIdentifier"
+      | "driver"
+      | "coupling"
     >
   >
 ) {

@@ -124,8 +124,14 @@ async function upsertAsset(asset: AssetDraft) {
       equipmentType: asset.equipmentType,
       equipmentTag: asset.equipmentTag ?? "",
       manufacturer: asset.manufacturer ?? "",
+      model: asset.model ?? "",
+      serial: asset.serial ?? "",
+      serviceApplication: asset.serviceApplication ?? "",
+      status: asset.status,
       quickNote: asset.quickNote ?? "",
       temporaryIdentifier: asset.temporaryIdentifier ?? "",
+      driver: asset.driver,
+      coupling: asset.coupling,
       photoCount: asset.photoCount
     })
   });
