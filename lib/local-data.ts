@@ -266,3 +266,77 @@ export async function deleteAssetDraft(assetDraftId: string) {
   await db.assetDrafts.delete(assetDraftId);
   await db.syncQueue.delete(`queue_asset_${assetDraftId}`);
 }
+
+export async function updateCustomerDraft(
+  customerId: string,
+  updates: Partial<Pick<CachedCustomer, "name" | "notes">>
+) {
+  const db = getLocalDb();
+  const existing = await db.customers.get(customerId);
+
+  if (!existing) {
+    throw new Error("Customer not found");
+  }
+
+  await db.customers.update(customerId, {
+    ...updates,
+    syncStatus:
+      existing.syncStatus === "synced"
+        ? "queued"
+        : navigator.onLine
+          ? "queued"
+          : "local-only",
+    updatedAt: nowIso()
+  });
+
+  await queueCustomerForSync(customerId);
+}
+
+export async function deleteCustomerDraft(customerId: string) {
+  const db = getLocalDb();
+  const sites = await db.sites.where("customerId").equals(customerId).toArray();
+
+  for (const site of sites) {
+    await deleteSiteDraft(site.id);
+  }
+
+  await db.customers.delete(customerId);
+  await db.syncQueue.delete(`queue_customer_${customerId}`);
+}
+
+export async function updateSiteDraft(
+  siteId: string,
+  updates: Partial<Pick<CachedSite, "customerId" | "name" | "address" | "areaUnit" | "notes">>
+) {
+  const db = getLocalDb();
+  const existing = await db.sites.get(siteId);
+
+  if (!existing) {
+    throw new Error("Site not found");
+  }
+
+  await db.sites.update(siteId, {
+    ...updates,
+    syncStatus:
+      existing.syncStatus === "synced"
+        ? "queued"
+        : navigator.onLine
+          ? "queued"
+          : "local-only",
+    updatedAt: nowIso()
+  });
+
+  await queueSiteForSync(siteId);
+}
+
+export async function deleteSiteDraft(siteId: string) {
+  const db = getLocalDb();
+  const assets = await db.assetDrafts.where("siteId").equals(siteId).toArray();
+
+  for (const asset of assets) {
+    await deleteAssetDraft(asset.id);
+  }
+
+  await db.sites.delete(siteId);
+  await db.syncQueue.delete(`queue_site_${siteId}`);
+}

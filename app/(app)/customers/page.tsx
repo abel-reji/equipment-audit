@@ -8,7 +8,12 @@ import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SyncStatusPill } from "@/components/sync-status-pill";
 import { getLocalDb } from "@/lib/local-db";
-import { createCustomerDraft, seedCustomers } from "@/lib/local-data";
+import {
+  createCustomerDraft,
+  deleteCustomerDraft,
+  seedCustomers,
+  updateCustomerDraft
+} from "@/lib/local-data";
 import type { CachedCustomer } from "@/lib/types";
 import { formatRelativeDate } from "@/lib/utils";
 
@@ -17,6 +22,8 @@ export default function CustomersPage() {
   const [search, setSearch] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerNotes, setCustomerNotes] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", notes: "" });
 
   async function refreshLocalState() {
     const db = getLocalDb();
@@ -62,6 +69,53 @@ export default function CustomersPage() {
       .includes(search.toLowerCase())
   );
 
+  async function handleSaveCustomer(customer: CachedCustomer) {
+    await updateCustomerDraft(customer.id, {
+      name: editForm.name,
+      notes: editForm.notes
+    });
+
+    if (customer.serverId) {
+      const response = await fetch(`/api/customers/${encodeURIComponent(customer.serverId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editForm.name,
+          notes: editForm.notes
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to update customer");
+      }
+    }
+
+    setEditingId(null);
+    await refreshLocalState();
+  }
+
+  async function handleDeleteCustomer(customer: CachedCustomer) {
+    const confirmed = window.confirm(
+      "Delete this customer? All sites and assets under it will also be removed."
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    if (customer.serverId) {
+      const response = await fetch(`/api/customers/${encodeURIComponent(customer.serverId)}`, {
+        method: "DELETE"
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to delete customer");
+      }
+    }
+
+    await deleteCustomerDraft(customer.id);
+    await refreshLocalState();
+  }
+
   return (
     <AppShell
       title="Customers"
@@ -89,12 +143,76 @@ export default function CustomersPage() {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="font-semibold text-ink">{customer.name}</div>
-                      <div className="mt-1 text-sm text-slate">
-                        {customer.notes || "No notes"}
-                      </div>
+                      {editingId === customer.id ? (
+                        <div className="space-y-3">
+                          <input
+                            className="field"
+                            value={editForm.name}
+                            onChange={(event) =>
+                              setEditForm((current) => ({ ...current, name: event.target.value }))
+                            }
+                          />
+                          <textarea
+                            className="field min-h-24"
+                            value={editForm.notes}
+                            onChange={(event) =>
+                              setEditForm((current) => ({ ...current, notes: event.target.value }))
+                            }
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <div className="font-semibold text-ink">{customer.name}</div>
+                          <div className="mt-1 text-sm text-slate">
+                            {customer.notes || "No notes"}
+                          </div>
+                        </>
+                      )}
                       <div className="mt-2 text-xs text-slate">
                         Updated {formatRelativeDate(customer.updatedAt)}
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-3">
+                        {editingId === customer.id ? (
+                          <>
+                            <button
+                              className="button-primary"
+                              type="button"
+                              onClick={() => void handleSaveCustomer(customer)}
+                            >
+                              Save changes
+                            </button>
+                            <button
+                              className="button-secondary"
+                              type="button"
+                              onClick={() => setEditingId(null)}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              className="button-primary"
+                              type="button"
+                              onClick={() => {
+                                setEditingId(customer.id);
+                                setEditForm({
+                                  name: customer.name,
+                                  notes: customer.notes || ""
+                                });
+                              }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="button-secondary"
+                              type="button"
+                              onClick={() => void handleDeleteCustomer(customer)}
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                     <SyncStatusPill status={customer.syncStatus} />

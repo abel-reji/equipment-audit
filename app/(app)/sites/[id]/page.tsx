@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SyncStatusPill } from "@/components/sync-status-pill";
 import { getLocalDb } from "@/lib/local-db";
+import { deleteSiteDraft, updateSiteDraft } from "@/lib/local-data";
 import type { AssetDraft, CachedCustomer, CachedSite } from "@/lib/types";
 import { formatRelativeDate } from "@/lib/utils";
 
@@ -25,10 +27,20 @@ export default function SiteDetailPage({
 }: {
   params: { id: string };
 }) {
+  const router = useRouter();
   const [site, setSite] = useState<CachedSite | null>(null);
+  const [customers, setCustomers] = useState<CachedCustomer[]>([]);
   const [customer, setCustomer] = useState<CachedCustomer | null>(null);
   const [localAssets, setLocalAssets] = useState<AssetDraft[]>([]);
   const [serverAssets, setServerAssets] = useState<ServerAsset[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState({
+    customerId: "",
+    name: "",
+    address: "",
+    areaUnit: "",
+    notes: ""
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,6 +49,7 @@ export default function SiteDetailPage({
       const localSite =
         (await db.sites.get(params.id)) ??
         (await db.sites.filter((entry) => entry.serverId === params.id).first());
+      setCustomers(await db.customers.orderBy("name").toArray());
 
       if (!localSite) {
         setLoading(false);
@@ -50,6 +63,13 @@ export default function SiteDetailPage({
         (await db.customers.filter((entry) => entry.serverId === localSite.customerServerId).first()) ??
         null;
       setCustomer(localCustomer);
+      setForm({
+        customerId: localSite.customerId,
+        name: localSite.name,
+        address: localSite.address || "",
+        areaUnit: localSite.areaUnit || "",
+        notes: localSite.notes || ""
+      });
 
       const draftAssets = await db.assetDrafts
         .filter(
@@ -116,6 +136,86 @@ export default function SiteDetailPage({
     );
   }, [localAssets, serverAssets]);
 
+  async function handleSaveSite() {
+    if (!site) {
+      return;
+    }
+
+    const selectedCustomer = customers.find(
+      (entry) => entry.id === form.customerId || entry.serverId === form.customerId
+    );
+
+    await updateSiteDraft(site.id, {
+      customerId: selectedCustomer?.id ?? form.customerId,
+      name: form.name,
+      address: form.address,
+      areaUnit: form.areaUnit,
+      notes: form.notes
+    });
+
+    if (site.serverId) {
+      const response = await fetch(`/api/sites/${encodeURIComponent(site.serverId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerId: selectedCustomer?.serverId,
+          name: form.name,
+          address: form.address,
+          areaUnit: form.areaUnit,
+          notes: form.notes
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to update site");
+      }
+    }
+
+    setSite((current) =>
+      current
+        ? {
+            ...current,
+            customerId: selectedCustomer?.id ?? form.customerId,
+            customerServerId: selectedCustomer?.serverId,
+            name: form.name,
+            address: form.address,
+            areaUnit: form.areaUnit,
+            notes: form.notes,
+            syncStatus: current.serverId ? "queued" : current.syncStatus,
+            updatedAt: new Date().toISOString()
+          }
+        : current
+    );
+    setCustomer(selectedCustomer ?? null);
+    setIsEditing(false);
+  }
+
+  async function handleDeleteSite() {
+    if (!site) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Delete this site? All assets saved under it will also be removed."
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    if (site.serverId) {
+      const response = await fetch(`/api/sites/${encodeURIComponent(site.serverId)}`, {
+        method: "DELETE"
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to delete site");
+      }
+    }
+
+    await deleteSiteDraft(site.id);
+    router.push("/sites");
+  }
+
   return (
     <AppShell
       title="Site Detail"
@@ -131,19 +231,95 @@ export default function SiteDetailPage({
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-moss">
               Site Context
             </p>
-            <h2 className="mt-2 text-2xl font-semibold text-ink">{site.name}</h2>
-            <div className="mt-5 grid gap-3">
-              <DetailRow label="Customer" value={customer?.name || "Unknown customer"} />
-              <DetailRow label="Address" value={site.address || "No address entered"} />
-              <DetailRow label="Area / unit" value={site.areaUnit || "No area or unit entered"} />
-              <DetailRow label="Notes" value={site.notes || "No notes"} />
-              <DetailRow label="Status" value={site.syncStatus} />
-            </div>
+            <h2 className="mt-2 text-2xl font-semibold text-ink">{isEditing ? "Edit site" : site.name}</h2>
+            {isEditing ? (
+              <div className="mt-5 space-y-4">
+                <FormField label="Customer">
+                  <select
+                    className="field"
+                    value={form.customerId}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, customerId: event.target.value }))
+                    }
+                  >
+                    <option value="">Select customer</option>
+                    {customers.map((entry) => (
+                      <option key={entry.id} value={entry.id}>
+                        {entry.name}
+                      </option>
+                    ))}
+                  </select>
+                </FormField>
+                <FormField label="Site name">
+                  <input
+                    className="field"
+                    value={form.name}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, name: event.target.value }))
+                    }
+                  />
+                </FormField>
+                <FormField label="Address">
+                  <input
+                    className="field"
+                    value={form.address}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, address: event.target.value }))
+                    }
+                  />
+                </FormField>
+                <FormField label="Area / unit">
+                  <input
+                    className="field"
+                    value={form.areaUnit}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, areaUnit: event.target.value }))
+                    }
+                  />
+                </FormField>
+                <FormField label="Notes">
+                  <textarea
+                    className="field min-h-24"
+                    value={form.notes}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, notes: event.target.value }))
+                    }
+                  />
+                </FormField>
+              </div>
+            ) : (
+              <div className="mt-5 grid gap-3">
+                <DetailRow label="Customer" value={customer?.name || "Unknown customer"} />
+                <DetailRow label="Address" value={site.address || "No address entered"} />
+                <DetailRow label="Area / unit" value={site.areaUnit || "No area or unit entered"} />
+                <DetailRow label="Notes" value={site.notes || "No notes"} />
+                <DetailRow label="Status" value={site.syncStatus} />
+              </div>
+            )}
 
-            <div className="mt-6">
+            <div className="mt-6 flex flex-wrap gap-3">
+              {isEditing ? (
+                <>
+                  <button className="button-primary" type="button" onClick={() => void handleSaveSite()}>
+                    Save changes
+                  </button>
+                  <button className="button-secondary" type="button" onClick={() => setIsEditing(false)}>
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button className="button-primary" type="button" onClick={() => setIsEditing(true)}>
+                    Edit site
+                  </button>
+                  <button className="button-secondary" type="button" onClick={() => void handleDeleteSite()}>
+                    Delete site
+                  </button>
+                </>
+              )}
               <Link
                 href={`/assets/new?siteId=${encodeURIComponent(site.id)}`}
-                className="button-primary"
+                className="button-secondary"
               >
                 Add asset for this site
               </Link>
@@ -200,6 +376,21 @@ function DetailRow({ label, value }: { label: string; value: string }) {
     <div className="rounded-2xl bg-mist px-4 py-3">
       <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate">{label}</div>
       <div className="mt-1 text-sm text-ink">{value}</div>
+    </div>
+  );
+}
+
+function FormField({
+  label,
+  children
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="label">{label}</label>
+      {children}
     </div>
   );
 }
