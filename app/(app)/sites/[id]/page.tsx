@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Pencil } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SyncStatusPill } from "@/components/sync-status-pill";
 import { getLocalDb } from "@/lib/local-db";
-import { deleteSiteDraft, updateSiteDraft } from "@/lib/local-data";
+import { deleteAssetDraft, deleteSiteDraft, updateSiteDraft } from "@/lib/local-data";
 import type { AssetDraft, CachedCustomer, CachedSite } from "@/lib/types";
 import { formatRelativeDate } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ export default function SiteDetailPage({
   const [localAssets, setLocalAssets] = useState<AssetDraft[]>([]);
   const [serverAssets, setServerAssets] = useState<ServerAsset[]>([]);
   const [isEditing, setIsEditing] = useState(false);
+  const [assetActionId, setAssetActionId] = useState<string | null>(null);
   const [form, setForm] = useState({
     customerId: "",
     name: "",
@@ -108,6 +110,8 @@ export default function SiteDetailPage({
 
     const mergedServerAssets = serverAssets.map((asset) => ({
       id: asset.id,
+      localId: localByServerId.get(asset.id)?.id,
+      serverId: asset.id,
       href: `/assets/${encodeURIComponent(asset.id)}`,
       equipmentType: asset.equipment_type,
       equipmentTag: asset.equipment_tag ?? undefined,
@@ -123,6 +127,8 @@ export default function SiteDetailPage({
       )
       .map((asset) => ({
         id: asset.id,
+        localId: asset.id,
+        serverId: asset.serverId,
         href: `/assets/${encodeURIComponent(asset.id)}`,
         equipmentType: asset.equipmentType,
         equipmentTag: asset.equipmentTag,
@@ -135,6 +141,37 @@ export default function SiteDetailPage({
       b.updatedAt.localeCompare(a.updatedAt)
     );
   }, [localAssets, serverAssets]);
+
+  async function handleDeleteAsset(asset: {
+    id: string;
+    localId?: string;
+    serverId?: string;
+  }) {
+    const confirmed = window.confirm("Delete this asset? This cannot be undone.");
+    if (!confirmed) {
+      return;
+    }
+
+    if (asset.serverId) {
+      const response = await fetch(`/api/assets/${encodeURIComponent(asset.serverId)}`, {
+        method: "DELETE"
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to delete asset");
+      }
+    }
+
+    if (asset.localId) {
+      await deleteAssetDraft(asset.localId);
+    }
+
+    setLocalAssets((current) =>
+      current.filter((entry) => entry.id !== asset.localId && entry.serverId !== asset.serverId)
+    );
+    setServerAssets((current) => current.filter((entry) => entry.id !== asset.serverId));
+    setAssetActionId(null);
+  }
 
   async function handleSaveSite() {
     if (!site) {
@@ -312,9 +349,6 @@ export default function SiteDetailPage({
                   <button className="button-primary" type="button" onClick={() => setIsEditing(true)}>
                     Edit site
                   </button>
-                  <button className="button-secondary" type="button" onClick={() => void handleDeleteSite()}>
-                    Delete site
-                  </button>
                 </>
               )}
               <Link
@@ -335,13 +369,12 @@ export default function SiteDetailPage({
             <div className="mt-5 space-y-3">
               {visibleAssets.length ? (
                 visibleAssets.map((asset) => (
-                  <Link
+                  <div
                     key={asset.id}
-                    href={asset.href}
-                    className="block rounded-3xl border border-ink/10 bg-white px-4 py-4 transition hover:border-moss/50"
+                    className="rounded-3xl border border-ink/10 bg-white px-4 py-4"
                   >
                     <div className="flex items-start justify-between gap-4">
-                      <div>
+                      <Link href={asset.href} className="min-w-0 flex-1 transition hover:text-moss">
                         <div className="font-semibold capitalize text-ink">
                           {asset.equipmentType}
                           {asset.equipmentTag ? ` · ${asset.equipmentTag}` : ""}
@@ -352,10 +385,36 @@ export default function SiteDetailPage({
                         <div className="mt-2 text-xs text-slate">
                           Updated {formatRelativeDate(asset.updatedAt)}
                         </div>
+                      </Link>
+                      <div className="flex shrink-0 flex-col items-end gap-3">
+                        <SyncStatusPill status={asset.status} />
+                        <button
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/10 bg-white text-slate transition hover:border-moss hover:text-moss"
+                          type="button"
+                          aria-label={`Open actions for ${asset.equipmentType}`}
+                          onClick={() =>
+                            setAssetActionId((current) => (current === asset.id ? null : asset.id))
+                          }
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                       </div>
-                      <SyncStatusPill status={asset.status} />
                     </div>
-                  </Link>
+                    {assetActionId === asset.id ? (
+                      <div className="mt-4 flex flex-wrap gap-3">
+                        <Link href={asset.href} className="button-primary">
+                          Edit asset
+                        </Link>
+                        <button
+                          className="inline-flex min-h-[3rem] items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100"
+                          type="button"
+                          onClick={() => void handleDeleteAsset(asset)}
+                        >
+                          Delete asset
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 ))
               ) : (
                 <EmptyState
@@ -364,6 +423,18 @@ export default function SiteDetailPage({
                 />
               )}
             </div>
+
+            {!isEditing ? (
+              <div className="mt-8 border-t border-ink/10 pt-6">
+                <button
+                  className="inline-flex min-h-[3rem] w-full items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100"
+                  type="button"
+                  onClick={() => void handleDeleteSite()}
+                >
+                  Delete site
+                </button>
+              </div>
+            ) : null}
           </section>
         </div>
       )}
