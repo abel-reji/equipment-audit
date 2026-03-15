@@ -23,8 +23,8 @@ export default function HomePage() {
     async function load() {
       const db = getLocalDb();
       const [localSites, localAssets] = await Promise.all([
-        db.sites.orderBy("lastUsedAt").reverse().limit(6).toArray(),
-        db.assetDrafts.orderBy("updatedAt").reverse().limit(6).toArray()
+        db.sites.orderBy("lastUsedAt").reverse().limit(3).toArray(),
+        db.assetDrafts.orderBy("updatedAt").reverse().limit(3).toArray()
       ]);
 
       setRecentSites(localSites);
@@ -39,7 +39,7 @@ export default function HomePage() {
           const data = await response.json();
           await seedCustomers(data.customers ?? []);
           await seedSites(data.sites ?? []);
-          const seededSites = await db.sites.orderBy("lastUsedAt").reverse().limit(6).toArray();
+          const seededSites = await db.sites.orderBy("lastUsedAt").reverse().limit(3).toArray();
           setRecentSites(seededSites);
         }
       } finally {
