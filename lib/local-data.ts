@@ -11,7 +11,14 @@ import {
 } from "@/lib/client-sync";
 
 export async function seedCustomers(
-  customers: Array<{ id: string; client_uid?: string; name: string; notes?: string | null }>
+  customers: Array<{
+    id: string;
+    client_uid?: string;
+    name: string;
+    notes?: string | null;
+    updated_at?: string;
+    created_at?: string;
+  }>
 ) {
   const db = getLocalDb();
   for (const customer of customers) {
@@ -35,8 +42,8 @@ export async function seedCustomers(
       name: customer.name,
       notes: customer.notes ?? undefined,
       syncStatus: "synced",
-      createdAt: canonical?.createdAt ?? nowIso(),
-      updatedAt: nowIso()
+      createdAt: canonical?.createdAt ?? customer.created_at ?? nowIso(),
+      updatedAt: customer.updated_at ?? canonical?.updatedAt ?? nowIso()
     });
 
     for (const duplicate of matches) {
@@ -56,6 +63,8 @@ export async function seedSites(
     address?: string | null;
     area_unit?: string | null;
     notes?: string | null;
+    updated_at?: string;
+    created_at?: string;
   }>
 ) {
   const db = getLocalDb();
@@ -83,8 +92,8 @@ export async function seedSites(
       notes: site.notes ?? undefined,
       syncStatus: "synced",
       lastUsedAt: canonical?.lastUsedAt,
-      createdAt: canonical?.createdAt ?? nowIso(),
-      updatedAt: nowIso()
+      createdAt: canonical?.createdAt ?? site.created_at ?? nowIso(),
+      updatedAt: site.updated_at ?? canonical?.updatedAt ?? nowIso()
     });
 
     for (const duplicate of matches) {

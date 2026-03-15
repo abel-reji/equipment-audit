@@ -121,7 +121,7 @@ export default function SiteDetailPage({
       model: asset.model ?? undefined,
       serial: asset.serial ?? undefined,
       temporaryIdentifier: asset.temporary_identifier ?? undefined,
-      updatedAt: asset.updated_at,
+      updatedAt: localByServerId.get(asset.id)?.updatedAt ?? asset.updated_at,
       status: localByServerId.get(asset.id)?.captureStatus ?? asset.capture_status
     }));
 
