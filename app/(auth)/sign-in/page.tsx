@@ -73,7 +73,7 @@ function SignInPageContent() {
             Rotating Equipment Audit
           </p>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink">
-            Capture equipment before the signal comes back.
+            Capture equipment information quickly.
           </h1>
           <p className="mt-4 text-sm text-slate">
             Sign in with a magic link, then use the app on your phone or iPad to
