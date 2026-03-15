@@ -56,7 +56,7 @@ export const assetDraftSchema = z.object({
       notes: z.string().max(500).optional().or(z.literal(""))
     })
     .optional(),
-  photoCount: z.number().int().min(1)
+  photoCount: z.number().int().min(0)
 });
 
 export const draftPhotoSchema = z.object({

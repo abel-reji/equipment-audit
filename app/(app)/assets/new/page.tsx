@@ -145,7 +145,7 @@ function NewAssetPageContent() {
   }
 
   async function handleSaveDraft() {
-    if (!form.siteId || !form.equipmentType || photos.length < 1) {
+    if (!form.siteId || !form.equipmentType) {
       return;
     }
 
@@ -439,8 +439,8 @@ function NewAssetPageContent() {
               </div>
             ) : (
               <EmptyState
-                title="Add at least one photo"
-                body="The draft stays incomplete until a queued photo exists. Use the camera while you are at the asset."
+                title="Photos are optional"
+                body="You can save this asset now and come back later to add field photos if needed."
               />
             )}
           </div>
@@ -450,7 +450,7 @@ function NewAssetPageContent() {
               className="button-primary w-full"
               type="button"
               onClick={() => void handleSaveDraft()}
-              disabled={!form.siteId || photos.length < 1}
+              disabled={!form.siteId}
             >
               Save draft
             </button>
