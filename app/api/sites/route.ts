@@ -12,12 +12,12 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const recent = url.searchParams.get("recent");
 
-    let query = supabase.from("sites").select("*, customers(name)").order("updated_at", {
-      ascending: false
-    });
+    let query = supabase.from("sites").select("*, customers(name)");
 
     if (recent === "true") {
-      query = query.limit(8);
+      query = query.order("last_used_at", { ascending: false, nullsFirst: false }).limit(8);
+    } else {
+      query = query.order("updated_at", { ascending: false });
     }
 
     const { data, error } = await query;
@@ -51,7 +51,8 @@ export async function POST(request: Request) {
           name: body.name,
           address: body.address || null,
           area_unit: body.areaUnit || null,
-          notes: body.notes || null
+          notes: body.notes || null,
+          last_used_at: body.lastUsedAt ?? null
         },
         { onConflict: "account_id,client_uid" }
       )
@@ -70,4 +71,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

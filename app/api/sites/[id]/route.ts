@@ -9,7 +9,8 @@ const patchSchema = z.object({
   name: z.string().min(2).max(120).optional(),
   address: z.string().max(200).optional(),
   areaUnit: z.string().max(120).optional(),
-  notes: z.string().max(500).optional()
+  notes: z.string().max(500).optional(),
+  lastUsedAt: z.string().datetime().optional()
 });
 
 export async function PATCH(
@@ -36,6 +37,9 @@ export async function PATCH(
     }
     if (body.notes !== undefined) {
       payload.notes = body.notes || null;
+    }
+    if (body.lastUsedAt !== undefined) {
+      payload.last_used_at = body.lastUsedAt;
     }
 
     const { error } = await supabase.from("sites").update(payload).eq("id", params.id);

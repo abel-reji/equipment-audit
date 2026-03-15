@@ -63,6 +63,7 @@ export async function seedSites(
     address?: string | null;
     area_unit?: string | null;
     notes?: string | null;
+    last_used_at?: string | null;
     updated_at?: string;
     created_at?: string;
   }>
@@ -91,7 +92,7 @@ export async function seedSites(
       areaUnit: site.area_unit ?? undefined,
       notes: site.notes ?? undefined,
       syncStatus: "synced",
-      lastUsedAt: canonical?.lastUsedAt,
+      lastUsedAt: site.last_used_at ?? canonical?.lastUsedAt,
       createdAt: canonical?.createdAt ?? site.created_at ?? nowIso(),
       updatedAt: site.updated_at ?? canonical?.updatedAt ?? nowIso()
     });
@@ -150,10 +151,21 @@ export async function createSiteDraft(input: {
 
 export async function markSiteUsed(siteId: string) {
   const db = getLocalDb();
+  const site = await db.sites.get(siteId);
+  if (!site) {
+    return;
+  }
+
+  const lastUsedAt = nowIso();
   await db.sites.update(siteId, {
-    lastUsedAt: nowIso(),
-    updatedAt: nowIso()
+    lastUsedAt,
+    syncStatus: site.serverId
+      ? navigator.onLine
+        ? "queued"
+        : "local-only"
+      : site.syncStatus
   });
+  await queueSiteForSync(siteId);
 }
 
 export async function saveAssetDraft(

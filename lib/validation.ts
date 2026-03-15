@@ -18,7 +18,8 @@ export const siteSchema = z.object({
   name: z.string().min(2).max(120),
   address: z.string().max(200).optional().or(z.literal("")),
   areaUnit: z.string().max(120).optional().or(z.literal("")),
-  notes: z.string().max(500).optional().or(z.literal(""))
+  notes: z.string().max(500).optional().or(z.literal("")),
+  lastUsedAt: z.string().datetime().optional()
 });
 
 export const assetDraftSchema = z.object({

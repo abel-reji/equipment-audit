@@ -103,7 +103,8 @@ async function upsertSite(site: CachedSite) {
       name: site.name,
       address: site.address ?? "",
       areaUnit: site.areaUnit ?? "",
-      notes: site.notes ?? ""
+      notes: site.notes ?? "",
+      lastUsedAt: site.lastUsedAt
     })
   });
 
@@ -219,8 +220,7 @@ export async function syncPendingData(supabase: SupabaseClient) {
           const result = await upsertCustomer(customer);
           await db.customers.update(customer.id, {
             serverId: result.customerId,
-            syncStatus: "synced",
-            updatedAt: nowIso()
+            syncStatus: "synced"
           });
         }
 
@@ -245,8 +245,7 @@ export async function syncPendingData(supabase: SupabaseClient) {
           await db.sites.update(site.id, {
             serverId: result.siteId,
             customerServerId: site.customerServerId,
-            syncStatus: "synced",
-            updatedAt: nowIso()
+            syncStatus: "synced"
           });
         }
 
@@ -269,16 +268,14 @@ export async function syncPendingData(supabase: SupabaseClient) {
 
           await db.assetDrafts.update(asset.id, {
             captureStatus: "syncing",
-            siteServerId: asset.siteServerId,
-            updatedAt: nowIso()
+            siteServerId: asset.siteServerId
           });
 
           const result = await upsertAsset(asset);
           await db.assetDrafts.update(asset.id, {
             serverId: result.assetId,
             captureStatus: asset.photoCount > 0 ? "partial" : "synced",
-            syncedAt: nowIso(),
-            updatedAt: nowIso()
+            syncedAt: nowIso()
           });
 
           const photos = await db.draftPhotos.where("assetDraftId").equals(asset.id).toArray();
@@ -335,13 +332,11 @@ export async function syncPendingData(supabase: SupabaseClient) {
 
             await db.assetDrafts.update(photo.assetDraftId, {
               captureStatus: nextStatus,
-              syncedAt: nowIso(),
-              updatedAt: nowIso()
+              syncedAt: nowIso()
             });
           } else {
             await db.assetDrafts.update(photo.assetDraftId, {
-              captureStatus: nextStatus,
-              updatedAt: nowIso()
+              captureStatus: nextStatus
             });
           }
         }
@@ -353,8 +348,7 @@ export async function syncPendingData(supabase: SupabaseClient) {
 
         if (item.entityType === "asset") {
           await db.assetDrafts.update(item.entityId, {
-            captureStatus: "failed",
-            updatedAt: nowIso()
+            captureStatus: "failed"
           });
         }
 
