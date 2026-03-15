@@ -474,7 +474,7 @@ export default function AssetDetailPage({
     >
       {loading ? (
         <EmptyState title="Loading asset" body="Pulling local drafts and server state into one summary." />
-      ) : serverAsset || draftPhotos.length ? (
+      ) : serverAsset || localDraft || draftPhotos.length ? (
         <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
           <section className="panel p-5 md:p-6">
             <div className="flex items-center justify-between">
