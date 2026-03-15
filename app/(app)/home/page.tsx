@@ -57,7 +57,6 @@ export default function HomePage() {
   return (
     <AppShell
       title="Field Capture"
-      description="Use recent site context, open draft assets, and push queued records when the network is stable."
     >
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <section className="panel p-5 md:p-6">
@@ -66,9 +65,6 @@ export default function HomePage() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-moss">
                 Fast Start
               </p>
-              <h2 className="mt-2 text-2xl font-semibold text-ink">
-                Capture the next asset
-              </h2>
             </div>
             <Camera className="h-8 w-8 text-moss" />
           </div>
@@ -87,7 +83,6 @@ export default function HomePage() {
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-moss">
             Status
           </p>
-          <h2 className="mt-2 text-2xl font-semibold text-ink">What matters now</h2>
           <div className="mt-5 grid gap-3">
             <StatusRow label="Recent sites" value={String(recentSites.length)} />
             <StatusRow label="Queued assets" value={String(queuedAssetCount)} />
@@ -106,7 +101,6 @@ export default function HomePage() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-moss">
                 Recent Sites
               </p>
-              <h2 className="mt-2 text-xl font-semibold text-ink">Return to a plant area fast</h2>
             </div>
             <MapPinned className="h-6 w-6 text-slate" />
           </div>
@@ -144,7 +138,6 @@ export default function HomePage() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-moss">
                 Recent Assets
               </p>
-              <h2 className="mt-2 text-xl font-semibold text-ink">Open recent assets</h2>
             </div>
             <Search className="h-6 w-6 text-slate" />
           </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, PlusCircle } from "lucide-react";
+import { Building2, Pencil, PlusCircle } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
@@ -22,7 +22,9 @@ export default function CustomersPage() {
   const [search, setSearch] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerNotes, setCustomerNotes] = useState("");
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: "", notes: "" });
 
   async function refreshLocalState() {
@@ -58,6 +60,7 @@ export default function CustomersPage() {
 
     setCustomerName("");
     setCustomerNotes("");
+    setShowCreateForm(false);
     await refreshLocalState();
   }
 
@@ -91,6 +94,7 @@ export default function CustomersPage() {
     }
 
     setEditingId(null);
+    setActionMenuId(null);
     await refreshLocalState();
   }
 
@@ -113,6 +117,7 @@ export default function CustomersPage() {
     }
 
     await deleteCustomerDraft(customer.id);
+    setActionMenuId(null);
     await refreshLocalState();
   }
 
@@ -142,7 +147,7 @@ export default function CustomersPage() {
                   className="rounded-3xl border border-ink/10 bg-white px-4 py-4"
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       {editingId === customer.id ? (
                         <div className="space-y-3">
                           <input
@@ -184,18 +189,22 @@ export default function CustomersPage() {
                             <button
                               className="button-secondary"
                               type="button"
-                              onClick={() => setEditingId(null)}
+                              onClick={() => {
+                                setEditingId(null);
+                                setActionMenuId(null);
+                              }}
                             >
                               Cancel
                             </button>
                           </>
-                        ) : (
+                        ) : actionMenuId === customer.id ? (
                           <>
                             <button
                               className="button-primary"
                               type="button"
                               onClick={() => {
                                 setEditingId(customer.id);
+                                setActionMenuId(customer.id);
                                 setEditForm({
                                   name: customer.name,
                                   notes: customer.notes || ""
@@ -212,10 +221,29 @@ export default function CustomersPage() {
                               Delete
                             </button>
                           </>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-3">
+                      <SyncStatusPill status={customer.syncStatus} />
+                      {editingId === customer.id ? (
+                        <div className="h-10 w-10" />
+                      ) : (
+                        <button
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/10 bg-white text-slate transition hover:border-moss hover:text-moss"
+                          type="button"
+                          aria-label={`Open actions for ${customer.name}`}
+                          onClick={() =>
+                            setActionMenuId((current) =>
+                              current === customer.id ? null : customer.id
+                            )
+                          }
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                         )}
                       </div>
                     </div>
-                    <SyncStatusPill status={customer.syncStatus} />
                   </div>
                 </div>
               ))
@@ -230,53 +258,71 @@ export default function CustomersPage() {
         </section>
 
         <section className="panel p-5 md:p-6">
-          <div className="flex items-center gap-2">
-            <PlusCircle className="h-5 w-5 text-moss" />
-            <h2 className="text-xl font-semibold text-ink">Add customer</h2>
-          </div>
-
-          <form className="mt-4 space-y-4" onSubmit={handleCreateCustomer}>
-            <div>
-              <label className="label" htmlFor="customer-name">
-                Customer name
-              </label>
-              <input
-                id="customer-name"
-                className="field"
-                value={customerName}
-                onChange={(event) => setCustomerName(event.target.value)}
-                placeholder="Acme Refining"
-              />
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <PlusCircle className="h-5 w-5 text-moss" />
+              <h2 className="text-xl font-semibold text-ink">Add customer</h2>
             </div>
-
-            <div>
-              <label className="label" htmlFor="customer-notes">
-                Notes
-              </label>
-              <textarea
-                id="customer-notes"
-                className="field min-h-24"
-                value={customerNotes}
-                onChange={(event) => setCustomerNotes(event.target.value)}
-                placeholder="Account context, access notes, or internal reminders"
-              />
-            </div>
-
-            <button className="button-primary w-full" type="submit">
-              Save customer
+            <button
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/10 bg-white text-slate transition hover:border-moss hover:text-moss"
+              type="button"
+              aria-label={showCreateForm ? "Hide add customer form" : "Show add customer form"}
+              onClick={() => setShowCreateForm((current) => !current)}
+            >
+              <PlusCircle className="h-5 w-5" />
             </button>
-          </form>
-
-          <div className="mt-6 rounded-3xl bg-mist px-4 py-4">
-            <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-              <Building2 className="h-4 w-4 text-moss" />
-              Recommended workflow
-            </div>
-            <p className="mt-2 text-sm text-slate">
-              Save the customer here first. Then open Sites and assign each plant,
-              terminal, or unit to that customer before capturing assets.
-            </p>
           </div>
+
+          {showCreateForm ? (
+            <>
+              <form className="mt-4 space-y-4" onSubmit={handleCreateCustomer}>
+                <div>
+                  <label className="label" htmlFor="customer-name">
+                    Customer name
+                  </label>
+                  <input
+                    id="customer-name"
+                    className="field"
+                    value={customerName}
+                    onChange={(event) => setCustomerName(event.target.value)}
+                    placeholder="Acme Refining"
+                  />
+                </div>
+
+                <div>
+                  <label className="label" htmlFor="customer-notes">
+                    Notes
+                  </label>
+                  <textarea
+                    id="customer-notes"
+                    className="field min-h-24"
+                    value={customerNotes}
+                    onChange={(event) => setCustomerNotes(event.target.value)}
+                    placeholder="Account context, access notes, or internal reminders"
+                  />
+                </div>
+
+                <button className="button-primary w-full" type="submit">
+                  Save customer
+                </button>
+              </form>
+
+              <div className="mt-6 rounded-3xl bg-mist px-4 py-4">
+                <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+                  <Building2 className="h-4 w-4 text-moss" />
+                  Recommended workflow
+                </div>
+                <p className="mt-2 text-sm text-slate">
+                  Save the customer here first. Then open Sites and assign each plant,
+                  terminal, or unit to that customer before capturing assets.
+                </p>
+              </div>
+            </>
+          ) : (
+            <p className="mt-4 text-sm text-slate">
+              Tap the plus icon when you need to add a new customer.
+            </p>
+          )}
         </section>
       </div>
     </AppShell>
