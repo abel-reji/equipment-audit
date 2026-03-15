@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { AppShell, ContextBar } from "@/components/app-shell";
@@ -9,7 +10,7 @@ import { EmptyState } from "@/components/empty-state";
 import { SyncStatusPill } from "@/components/sync-status-pill";
 import { assetStatusOptions, equipmentTypeOptions } from "@/lib/constants";
 import { getLocalDb } from "@/lib/local-db";
-import { deleteAssetDraft, updateAssetDraft } from "@/lib/local-data";
+import { deleteAssetDraft, deleteDraftPhoto, updateAssetDraft } from "@/lib/local-data";
 import type {
   AssetStatus,
   AssetCouplingDetails,
@@ -457,6 +458,49 @@ export default function AssetDetailPage({
     }
   }
 
+  async function handleDeleteDraftPhoto(photoId: string) {
+    await deleteDraftPhoto(photoId);
+    setDraftPhotos((current) => current.filter((photo) => photo.id !== photoId));
+    setLocalDraft((current) =>
+      current
+        ? {
+            ...current,
+            photoCount: Math.max(0, current.photoCount - 1),
+            updatedAt: new Date().toISOString()
+          }
+        : current
+    );
+  }
+
+  async function handleDeleteServerPhoto(photoId: string) {
+    if (!serverAsset?.asset.id) {
+      return;
+    }
+
+    const confirmed = window.confirm("Delete this photo from the asset?");
+    if (!confirmed) {
+      return;
+    }
+
+    const response = await fetch(
+      `/api/assets/${encodeURIComponent(serverAsset.asset.id)}/photos/${encodeURIComponent(photoId)}`,
+      { method: "DELETE" }
+    );
+
+    if (!response.ok) {
+      throw new Error("Unable to delete photo");
+    }
+
+    setServerAsset((current) =>
+      current
+        ? {
+            ...current,
+            photos: current.photos.filter((photo) => photo.id !== photoId)
+          }
+        : current
+    );
+  }
+
   return (
     <AppShell
       title="Asset Detail"
@@ -893,6 +937,7 @@ export default function AssetDetailPage({
                   label={photo.photo_type}
                   src={photo.signedUrl}
                   subtitle="Synced photo"
+                  onDelete={() => void handleDeleteServerPhoto(photo.id)}
                 />
               ))}
               {!serverAsset?.photos?.length &&
@@ -902,6 +947,7 @@ export default function AssetDetailPage({
                     label={photo.photoType}
                     src={photo.previewUrl}
                     subtitle={photo.uploadStatus}
+                    onDelete={() => void handleDeleteDraftPhoto(photo.id)}
                   />
                 ))}
             </div>
@@ -953,11 +999,13 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 function PhotoCard({
   label,
   src,
-  subtitle
+  subtitle,
+  onDelete
 }: {
   label: string;
   src?: string;
   subtitle: string;
+  onDelete?: () => void;
 }) {
   return (
     <div className="overflow-hidden rounded-3xl border border-ink/10 bg-white">
@@ -970,8 +1018,22 @@ function PhotoCard({
         </div>
       )}
       <div className="px-4 py-3">
-        <div className="font-semibold capitalize text-ink">{label.replace("-", " ")}</div>
-        <div className="mt-1 text-xs text-slate capitalize">{subtitle.replace("-", " ")}</div>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="font-semibold capitalize text-ink">{label.replace("-", " ")}</div>
+            <div className="mt-1 text-xs text-slate capitalize">{subtitle.replace("-", " ")}</div>
+          </div>
+          {onDelete ? (
+            <button
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-700 transition hover:border-red-300 hover:bg-red-100"
+              type="button"
+              aria-label={`Delete ${label.replace("-", " ")} photo`}
+              onClick={onDelete}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          ) : null}
+        </div>
       </div>
     </div>
   );

@@ -234,6 +234,30 @@ export async function getDraftAssetWithPhotos(assetDraftId: string) {
   return { draft, photos };
 }
 
+export async function deleteDraftPhoto(photoId: string) {
+  const db = getLocalDb();
+  const photo = await db.draftPhotos.get(photoId);
+
+  if (!photo) {
+    throw new Error("Photo not found");
+  }
+
+  if (photo.previewUrl) {
+    URL.revokeObjectURL(photo.previewUrl);
+  }
+
+  await db.draftPhotos.delete(photoId);
+  await db.syncQueue.delete(`queue_photo_${photoId}`);
+
+  const asset = await db.assetDrafts.get(photo.assetDraftId);
+  if (asset) {
+    await db.assetDrafts.update(asset.id, {
+      photoCount: Math.max(0, asset.photoCount - 1),
+      updatedAt: nowIso()
+    });
+  }
+}
+
 export async function updateAssetDraft(
   assetDraftId: string,
   updates: Partial<
