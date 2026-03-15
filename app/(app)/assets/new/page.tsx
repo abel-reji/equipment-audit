@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Camera, CheckCircle2 } from "lucide-react";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useId, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
@@ -23,6 +23,8 @@ export default function NewAssetPage() {
 }
 
 function NewAssetPageContent() {
+  const cameraInputId = useId();
+  const libraryInputId = useId();
   const searchParams = useSearchParams();
   const selectedSiteId = searchParams.get("siteId") ?? "";
 
@@ -241,9 +243,12 @@ function NewAssetPageContent() {
               </select>
             </div>
 
-            <label className="button-secondary w-full cursor-pointer">
-              Capture or select photos
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label htmlFor={cameraInputId} className="button-secondary w-full cursor-pointer">
+                Use camera
+              </label>
               <input
+                id={cameraInputId}
                 type="file"
                 accept="image/*"
                 capture="environment"
@@ -251,7 +256,19 @@ function NewAssetPageContent() {
                 multiple
                 onChange={(event) => void handlePhotoSelected(event.target.files)}
               />
-            </label>
+
+              <label htmlFor={libraryInputId} className="button-secondary w-full cursor-pointer">
+                Upload from phone
+              </label>
+              <input
+                id={libraryInputId}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                multiple
+                onChange={(event) => void handlePhotoSelected(event.target.files)}
+              />
+            </div>
 
             {photos.length ? (
               <div className="grid grid-cols-2 gap-3">
