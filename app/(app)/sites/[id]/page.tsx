@@ -18,6 +18,8 @@ interface ServerAsset {
   equipment_tag?: string | null;
   equipment_type: string;
   manufacturer?: string | null;
+  model?: string | null;
+  serial?: string | null;
   temporary_identifier?: string | null;
   capture_status: AssetDraft["captureStatus"];
   updated_at: string;
@@ -115,7 +117,10 @@ export default function SiteDetailPage({
       href: `/assets/${encodeURIComponent(asset.id)}`,
       equipmentType: asset.equipment_type,
       equipmentTag: asset.equipment_tag ?? undefined,
-      manufacturer: asset.manufacturer ?? asset.temporary_identifier ?? undefined,
+      manufacturer: asset.manufacturer ?? undefined,
+      model: asset.model ?? undefined,
+      serial: asset.serial ?? undefined,
+      temporaryIdentifier: asset.temporary_identifier ?? undefined,
       updatedAt: asset.updated_at,
       status: localByServerId.get(asset.id)?.captureStatus ?? asset.capture_status
     }));
@@ -132,7 +137,10 @@ export default function SiteDetailPage({
         href: `/assets/${encodeURIComponent(asset.id)}`,
         equipmentType: asset.equipmentType,
         equipmentTag: asset.equipmentTag,
-        manufacturer: asset.manufacturer || asset.temporaryIdentifier,
+        manufacturer: asset.manufacturer,
+        model: asset.model,
+        serial: asset.serial,
+        temporaryIdentifier: asset.temporaryIdentifier,
         updatedAt: asset.updatedAt,
         status: asset.captureStatus
       }));
@@ -377,10 +385,13 @@ export default function SiteDetailPage({
                       <Link href={asset.href} className="min-w-0 flex-1 transition hover:text-moss">
                         <div className="font-semibold capitalize text-ink">
                           {asset.equipmentType}
-                          {asset.equipmentTag ? ` · ${asset.equipmentTag}` : ""}
+                          {asset.equipmentTag ? ` | ${asset.equipmentTag}` : ""}
                         </div>
                         <div className="mt-1 text-sm text-slate">
-                          {asset.manufacturer || "No manufacturer or temp ID"}
+                          {formatAssetIdentity(asset)}
+                        </div>
+                        <div className="mt-1 text-xs text-slate">
+                          {formatAssetSecondary(asset)}
                         </div>
                         <div className="mt-2 text-xs text-slate">
                           Updated {formatRelativeDate(asset.updatedAt)}
@@ -464,4 +475,30 @@ function FormField({
       {children}
     </div>
   );
+}
+
+function formatAssetIdentity(asset: {
+  manufacturer?: string;
+  model?: string;
+  temporaryIdentifier?: string;
+}) {
+  const values = [asset.manufacturer, asset.model].filter(Boolean);
+
+  if (values.length) {
+    return values.join(" | ");
+  }
+
+  return asset.temporaryIdentifier ? `Temp ID: ${asset.temporaryIdentifier}` : "No manufacturer or model";
+}
+
+function formatAssetSecondary(asset: {
+  serial?: string;
+  temporaryIdentifier?: string;
+}) {
+  const values = [
+    asset.serial ? `Serial: ${asset.serial}` : "",
+    asset.temporaryIdentifier ? `Temp ID: ${asset.temporaryIdentifier}` : ""
+  ].filter(Boolean);
+
+  return values.length ? values.join(" | ") : "No serial or temporary ID";
 }
