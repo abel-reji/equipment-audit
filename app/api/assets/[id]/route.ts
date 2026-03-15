@@ -96,6 +96,7 @@ const patchSchema = z.object({
     .object({
       motorOem: z.string().max(120).optional(),
       motorModel: z.string().max(120).optional(),
+      serialNumber: z.string().max(120).optional(),
       hp: z.string().max(40).optional(),
       rpm: z.string().max(40).optional(),
       voltage: z.string().max(40).optional(),
@@ -189,6 +190,7 @@ export async function PATCH(
             account_id: account.id,
             motor_oem: body.driver.motorOem || null,
             motor_model: body.driver.motorModel || null,
+            serial_number: body.driver.serialNumber || null,
             hp: body.driver.hp || null,
             rpm: body.driver.rpm || null,
             voltage: body.driver.voltage || null,

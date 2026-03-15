@@ -23,6 +23,7 @@ import { formatRelativeDate } from "@/lib/utils";
 const emptyDriver: AssetDriverDetails = {
   motorOem: "",
   motorModel: "",
+  serialNumber: "",
   hp: "",
   rpm: "",
   voltage: "",
@@ -150,6 +151,7 @@ export default function AssetDetailPage({
             ...emptyDriver,
             motorOem: draft?.driver?.motorOem || payload.driver?.motor_oem || "",
             motorModel: draft?.driver?.motorModel || payload.driver?.motor_model || "",
+            serialNumber: draft?.driver?.serialNumber || payload.driver?.serial_number || "",
             hp: draft?.driver?.hp || payload.driver?.hp || "",
             rpm: draft?.driver?.rpm || payload.driver?.rpm || "",
             voltage: draft?.driver?.voltage || payload.driver?.voltage || "",
@@ -284,6 +286,7 @@ export default function AssetDetailPage({
                     }),
                     motor_oem: form.driver.motorOem || null,
                     motor_model: form.driver.motorModel || null,
+                    serial_number: form.driver.serialNumber || null,
                     hp: form.driver.hp || null,
                     rpm: form.driver.rpm || null,
                     voltage: form.driver.voltage || null,
@@ -618,6 +621,18 @@ export default function AssetDetailPage({
                           setForm((current) => ({
                             ...current,
                             driver: { ...current.driver, motorModel: event.target.value }
+                          }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Driver serial no.">
+                      <input
+                        className="field"
+                        value={form.driver.serialNumber}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            driver: { ...current.driver, serialNumber: event.target.value }
                           }))
                         }
                       />
@@ -958,6 +973,7 @@ function formatDriverSummary(
   const values = [
     localDriver?.motorOem || serverDriver?.motor_oem || "",
     localDriver?.motorModel || serverDriver?.motor_model || "",
+    localDriver?.serialNumber || serverDriver?.serial_number || "",
     localDriver?.hp ? `${localDriver.hp} HP` : serverDriver?.hp ? `${serverDriver.hp} HP` : "",
     localDriver?.rpm ? `${localDriver.rpm} RPM` : serverDriver?.rpm ? `${serverDriver.rpm} RPM` : ""
   ].filter(Boolean);

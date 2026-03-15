@@ -27,6 +27,7 @@ export type AssetStatus =
 export interface AssetDriverDetails {
   motorOem?: string;
   motorModel?: string;
+  serialNumber?: string;
   hp?: string;
   rpm?: string;
   voltage?: string;
@@ -102,6 +103,7 @@ export interface AssetDriverRecord {
   asset_id: string;
   motor_oem: string | null;
   motor_model: string | null;
+  serial_number: string | null;
   hp: string | null;
   rpm: string | null;
   voltage: string | null;

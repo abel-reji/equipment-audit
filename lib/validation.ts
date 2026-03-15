@@ -41,6 +41,7 @@ export const assetDraftSchema = z.object({
     .object({
       motorOem: z.string().max(120).optional().or(z.literal("")),
       motorModel: z.string().max(120).optional().or(z.literal("")),
+      serialNumber: z.string().max(120).optional().or(z.literal("")),
       hp: z.string().max(40).optional().or(z.literal("")),
       rpm: z.string().max(40).optional().or(z.literal("")),
       voltage: z.string().max(40).optional().or(z.literal("")),

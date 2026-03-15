@@ -27,6 +27,16 @@ interface CapturedLocation {
   capturedAt: string;
 }
 
+const initialAssetForm = {
+  customerId: "",
+  siteId: "",
+  equipmentType: "pump",
+  equipmentTag: "",
+  manufacturer: "",
+  quickNote: "",
+  temporaryIdentifier: ""
+};
+
 export default function NewAssetPage() {
   return (
     <Suspense fallback={null}>
@@ -43,19 +53,14 @@ function NewAssetPageContent() {
 
   const [customers, setCustomers] = useState<CachedCustomer[]>([]);
   const [sites, setSites] = useState<CachedSite[]>([]);
-  const [assetId] = useState(() => makeClientId("asset"));
+  const [assetId, setAssetId] = useState(() => makeClientId("asset"));
   const [form, setForm] = useState({
-    customerId: "",
-    siteId: selectedSiteId,
-    equipmentType: "pump",
-    equipmentTag: "",
-    manufacturer: "",
-    quickNote: "",
-    temporaryIdentifier: ""
+    ...initialAssetForm,
+    siteId: selectedSiteId
   });
   const [photos, setPhotos] = useState<DraftPhoto[]>([]);
   const [photoType, setPhotoType] = useState<PhotoType>("equipment");
-  const [saved, setSaved] = useState(false);
+  const [lastSavedAssetId, setLastSavedAssetId] = useState<string | null>(null);
   const [location, setLocation] = useState<CapturedLocation | null>(null);
   const [locationError, setLocationError] = useState("");
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
@@ -141,7 +146,7 @@ function NewAssetPageContent() {
     }
 
     setPhotos((current) => [...current, ...nextPhotos]);
-    setSaved(false);
+    setLastSavedAssetId(null);
   }
 
   async function handleSaveDraft() {
@@ -166,7 +171,17 @@ function NewAssetPageContent() {
     });
 
     await markSiteUsed(selectedSite?.id ?? form.siteId);
-    setSaved(true);
+    setLastSavedAssetId(assetId);
+    setAssetId(makeClientId("asset"));
+    setPhotos([]);
+    setPhotoType("equipment");
+    setLocation(null);
+    setLocationError("");
+    setForm((current) => ({
+      ...initialAssetForm,
+      customerId: current.customerId,
+      siteId: current.siteId
+    }));
   }
 
   async function handleCaptureLocation() {
@@ -192,7 +207,7 @@ function NewAssetPageContent() {
         accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null,
         capturedAt: new Date().toISOString()
       });
-      setSaved(false);
+      setLastSavedAssetId(null);
     } catch (error) {
       setLocationError(formatLocationError(error));
     } finally {
@@ -216,7 +231,7 @@ function NewAssetPageContent() {
                 Minimal inputs, photo-first record
               </h2>
             </div>
-            {saved ? <SyncStatusPill status="queued" /> : null}
+            {lastSavedAssetId ? <SyncStatusPill status="synced" /> : null}
           </div>
 
           <div className="mt-5 space-y-5">
@@ -439,8 +454,8 @@ function NewAssetPageContent() {
               </div>
             ) : (
               <EmptyState
-                title="Photos are optional"
-                body="You can save this asset now and come back later to add field photos if needed."
+                title="Add photos when available"
+                body="Photos are strongly recommended for field records, but you can save now and add them later."
               />
             )}
           </div>
@@ -452,12 +467,15 @@ function NewAssetPageContent() {
               onClick={() => void handleSaveDraft()}
               disabled={!form.siteId}
             >
-              Save draft
+              Save asset
             </button>
-            {saved ? (
-              <Link href={`/assets/${encodeURIComponent(assetId)}`} className="button-secondary w-full">
+            {lastSavedAssetId ? (
+              <Link
+                href={`/assets/${encodeURIComponent(lastSavedAssetId)}`}
+                className="button-secondary w-full"
+              >
                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                Open draft
+                View saved asset
               </Link>
             ) : (
               <Link href="/sites" className="button-secondary w-full">
@@ -465,6 +483,12 @@ function NewAssetPageContent() {
               </Link>
             )}
           </div>
+
+          {lastSavedAssetId ? (
+            <p className="mt-4 rounded-2xl bg-mist px-4 py-3 text-sm text-slate">
+              Asset saved. Customer and site stayed selected so you can add the next asset faster.
+            </p>
+          ) : null}
         </section>
       </div>
 
@@ -505,7 +529,7 @@ function TextField({
 function formatLocationSummary(location: CapturedLocation) {
   const latitude = location.latitude.toFixed(6);
   const longitude = location.longitude.toFixed(6);
-  const accuracy = location.accuracy ? ` ±${Math.round(location.accuracy)}m` : "";
+  const accuracy = location.accuracy ? ` +/- ${Math.round(location.accuracy)}m` : "";
 
   return `${latitude}, ${longitude}${accuracy} | ${formatRelativeDate(location.capturedAt)}`;
 }

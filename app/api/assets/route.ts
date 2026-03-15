@@ -86,6 +86,7 @@ export async function POST(request: Request) {
             asset_id: data.id,
             motor_oem: body.driver?.motorOem || null,
             motor_model: body.driver?.motorModel || null,
+            serial_number: body.driver?.serialNumber || null,
             hp: body.driver?.hp || null,
             rpm: body.driver?.rpm || null,
             voltage: body.driver?.voltage || null,
