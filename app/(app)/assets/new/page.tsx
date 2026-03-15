@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Camera, CheckCircle2 } from "lucide-react";
+import { Camera, CheckCircle2, MapPin } from "lucide-react";
 import { Suspense, useEffect, useId, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -12,7 +12,14 @@ import { equipmentTypeOptions, photoTypeOptions } from "@/lib/constants";
 import { getLocalDb } from "@/lib/local-db";
 import { addDraftPhoto, markSiteUsed, saveAssetDraft, seedSites } from "@/lib/local-data";
 import type { CachedSite, DraftPhoto, PhotoType } from "@/lib/types";
-import { makeClientId } from "@/lib/utils";
+import { formatRelativeDate, makeClientId } from "@/lib/utils";
+
+interface CapturedLocation {
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  capturedAt: string;
+}
 
 export default function NewAssetPage() {
   return (
@@ -41,6 +48,9 @@ function NewAssetPageContent() {
   const [photos, setPhotos] = useState<DraftPhoto[]>([]);
   const [photoType, setPhotoType] = useState<PhotoType>("equipment");
   const [saved, setSaved] = useState(false);
+  const [location, setLocation] = useState<CapturedLocation | null>(null);
+  const [locationError, setLocationError] = useState("");
+  const [isCapturingLocation, setIsCapturingLocation] = useState(false);
 
   useEffect(() => {
     async function bootstrap() {
@@ -101,6 +111,10 @@ function NewAssetPageContent() {
       equipmentType: form.equipmentType as typeof equipmentTypeOptions[number],
       equipmentTag: form.equipmentTag,
       manufacturer: form.manufacturer,
+      latitude: location?.latitude,
+      longitude: location?.longitude,
+      locationAccuracyMeters: location?.accuracy ?? undefined,
+      locationCapturedAt: location?.capturedAt,
       quickNote: form.quickNote,
       temporaryIdentifier: form.temporaryIdentifier,
       photoCount: photos.length
@@ -108,6 +122,37 @@ function NewAssetPageContent() {
 
     await markSiteUsed(selectedSite?.id ?? form.siteId);
     setSaved(true);
+  }
+
+  async function handleCaptureLocation() {
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      setLocationError("Geolocation is not supported on this device.");
+      return;
+    }
+
+    try {
+      setLocationError("");
+      setIsCapturingLocation(true);
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
+        });
+      });
+
+      setLocation({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null,
+        capturedAt: new Date().toISOString()
+      });
+      setSaved(false);
+    } catch (error) {
+      setLocationError(formatLocationError(error));
+    } finally {
+      setIsCapturingLocation(false);
+    }
   }
 
   return (
@@ -209,6 +254,39 @@ function NewAssetPageContent() {
                   setForm((current) => ({ ...current, quickNote: event.target.value }))
                 }
               />
+            </div>
+
+            <div className="rounded-3xl bg-mist p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-moss">
+                    Geotag
+                  </div>
+                  <div className="mt-1 text-sm text-slate">
+                    Save the phone location with this asset while you are standing at it.
+                  </div>
+                </div>
+                <MapPin className="h-5 w-5 text-slate" />
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  className="button-secondary"
+                  type="button"
+                  onClick={() => void handleCaptureLocation()}
+                  disabled={isCapturingLocation}
+                >
+                  {isCapturingLocation ? "Capturing location..." : "Capture location"}
+                </button>
+              </div>
+
+              <div className="mt-4 rounded-2xl bg-white px-4 py-3 text-sm text-slate">
+                {location ? formatLocationSummary(location) : "No location captured yet"}
+              </div>
+
+              {locationError ? (
+                <p className="mt-3 text-sm text-slate">{locationError}</p>
+              ) : null}
             </div>
           </div>
         </section>
@@ -352,4 +430,29 @@ function TextField({
       <input id={id} className="field" value={value} onChange={(event) => onChange(event.target.value)} />
     </div>
   );
+}
+
+function formatLocationSummary(location: CapturedLocation) {
+  const latitude = location.latitude.toFixed(6);
+  const longitude = location.longitude.toFixed(6);
+  const accuracy = location.accuracy ? ` ±${Math.round(location.accuracy)}m` : "";
+
+  return `${latitude}, ${longitude}${accuracy} | ${formatRelativeDate(location.capturedAt)}`;
+}
+
+function formatLocationError(error: unknown) {
+  if (typeof GeolocationPositionError !== "undefined" && error instanceof GeolocationPositionError) {
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        return "Location access was denied. Allow location permission and try again.";
+      case error.POSITION_UNAVAILABLE:
+        return "The device could not determine a location.";
+      case error.TIMEOUT:
+        return "Location capture timed out. Try again outside or with a stronger signal.";
+      default:
+        return error.message || "Unable to capture location.";
+    }
+  }
+
+  return error instanceof Error ? error.message : "Unable to capture location.";
 }
