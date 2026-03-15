@@ -176,16 +176,17 @@ export default function AssetDetailPage({
   }, [params.id]);
 
   const detailAsset = serverAsset?.asset;
-  const detailSiteName = serverAsset?.site.name || "Local draft site";
   const detailStatus = detailAsset?.capture_status ?? localDraft?.captureStatus ?? "queued";
   const detailLocation = getDisplayedLocation(detailAsset, localDraft);
-  const detailSiteId =
-    sites.find(
-      (site) =>
-        site.id === localDraft?.siteId ||
-        site.serverId === localDraft?.siteServerId ||
-        site.serverId === serverAsset?.site.id
-    )?.id ?? localDraft?.siteId;
+  const matchedSite = sites.find(
+    (site) =>
+      site.id === localDraft?.siteId ||
+      site.id === form.siteId ||
+      site.serverId === localDraft?.siteServerId ||
+      site.serverId === serverAsset?.site.id
+  );
+  const detailSiteId = matchedSite?.id ?? localDraft?.siteId;
+  const detailSiteName = matchedSite?.name || serverAsset?.site.name || "Local draft site";
 
   async function handleSaveEdits() {
     try {
