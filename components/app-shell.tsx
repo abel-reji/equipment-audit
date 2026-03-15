@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, ChevronRight, Home, MapPinned, Search, UploadCloud } from "lucide-react";
+import { Building2, ChevronRight, Ellipsis, Home, MapPinned, UploadCloud } from "lucide-react";
 
 import { useSyncManager } from "@/hooks/use-sync-manager";
 import { formatRelativeDate } from "@/lib/utils";
@@ -77,10 +77,14 @@ export function AppShell({
             active={pathname === "/sites" || pathname?.startsWith("/sites/")}
           />
           <NavItem
-            href="/search"
-            label="Search"
-            icon={<Search className="h-5 w-5" />}
-            active={pathname === "/search"}
+            href="/more"
+            label="More"
+            icon={<Ellipsis className="h-5 w-5" />}
+            active={
+              pathname === "/more" ||
+              pathname === "/reports" ||
+              pathname === "/maps"
+            }
           />
           <Link
             href="/assets/new"
