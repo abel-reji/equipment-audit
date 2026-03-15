@@ -10,8 +10,14 @@ import { EmptyState } from "@/components/empty-state";
 import { SyncStatusPill } from "@/components/sync-status-pill";
 import { equipmentTypeOptions, photoTypeOptions } from "@/lib/constants";
 import { getLocalDb } from "@/lib/local-db";
-import { addDraftPhoto, markSiteUsed, saveAssetDraft, seedSites } from "@/lib/local-data";
-import type { CachedSite, DraftPhoto, PhotoType } from "@/lib/types";
+import {
+  addDraftPhoto,
+  markSiteUsed,
+  saveAssetDraft,
+  seedCustomers,
+  seedSites
+} from "@/lib/local-data";
+import type { CachedCustomer, CachedSite, DraftPhoto, PhotoType } from "@/lib/types";
 import { formatRelativeDate, makeClientId } from "@/lib/utils";
 
 interface CapturedLocation {
@@ -35,9 +41,11 @@ function NewAssetPageContent() {
   const searchParams = useSearchParams();
   const selectedSiteId = searchParams.get("siteId") ?? "";
 
+  const [customers, setCustomers] = useState<CachedCustomer[]>([]);
   const [sites, setSites] = useState<CachedSite[]>([]);
   const [assetId] = useState(() => makeClientId("asset"));
   const [form, setForm] = useState({
+    customerId: "",
     siteId: selectedSiteId,
     equipmentType: "pump",
     equipmentTag: "",
@@ -55,15 +63,25 @@ function NewAssetPageContent() {
   useEffect(() => {
     async function bootstrap() {
       const db = getLocalDb();
-      const localSites = await db.sites.orderBy("updatedAt").reverse().toArray();
+      const [localCustomers, localSites] = await Promise.all([
+        db.customers.orderBy("name").toArray(),
+        db.sites.orderBy("updatedAt").reverse().toArray()
+      ]);
+      setCustomers(localCustomers);
       setSites(localSites);
 
-      if (!localSites.length) {
-        const response = await fetch("/api/sites", { cache: "no-store" });
+      if (!localCustomers.length || !localSites.length) {
+        const response = await fetch("/api/bootstrap", { cache: "no-store" });
         if (response.ok) {
           const data = await response.json();
+          await seedCustomers(data.customers ?? []);
           await seedSites(data.sites ?? []);
-          setSites(await db.sites.orderBy("updatedAt").reverse().toArray());
+          const [seededCustomers, seededSites] = await Promise.all([
+            db.customers.orderBy("name").toArray(),
+            db.sites.orderBy("updatedAt").reverse().toArray()
+          ]);
+          setCustomers(seededCustomers);
+          setSites(seededSites);
         }
       }
     }
@@ -71,14 +89,41 @@ function NewAssetPageContent() {
     void bootstrap();
   }, []);
 
-  useEffect(() => {
-    setForm((current) => ({ ...current, siteId: selectedSiteId || current.siteId }));
-  }, [selectedSiteId]);
-
   const selectedSite = useMemo(
     () => sites.find((site) => site.id === form.siteId || site.serverId === form.siteId),
     [form.siteId, sites]
   );
+
+  const filteredSites = useMemo(() => {
+    if (!form.customerId) {
+      return [];
+    }
+
+    return sites.filter(
+      (site) =>
+        site.customerId === form.customerId || site.customerServerId === form.customerId
+    );
+  }, [form.customerId, sites]);
+
+  useEffect(() => {
+    if (!selectedSiteId || !sites.length) {
+      return;
+    }
+
+    const matchingSite = sites.find(
+      (site) => site.id === selectedSiteId || site.serverId === selectedSiteId
+    );
+
+    if (!matchingSite) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      customerId: matchingSite.customerId || matchingSite.customerServerId || current.customerId,
+      siteId: matchingSite.id
+    }));
+  }, [selectedSiteId, sites]);
 
   async function handlePhotoSelected(files: FileList | null) {
     if (!files?.length) {
@@ -176,6 +221,31 @@ function NewAssetPageContent() {
 
           <div className="mt-5 space-y-5">
             <div>
+              <label className="label" htmlFor="customer-select">
+                Customer
+              </label>
+              <select
+                id="customer-select"
+                className="field"
+                value={form.customerId}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    customerId: event.target.value,
+                    siteId: ""
+                  }))
+                }
+              >
+                <option value="">Select a customer</option>
+                {customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
               <label className="label" htmlFor="site-select">
                 Site
               </label>
@@ -183,12 +253,13 @@ function NewAssetPageContent() {
                 id="site-select"
                 className="field"
                 value={form.siteId}
+                disabled={!form.customerId}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, siteId: event.target.value }))
                 }
               >
-                <option value="">Select a site</option>
-                {sites.map((site) => (
+                <option value="">{form.customerId ? "Select a site" : "Select a customer first"}</option>
+                {filteredSites.map((site) => (
                   <option key={site.id} value={site.id}>
                     {site.name}
                   </option>
@@ -297,7 +368,6 @@ function NewAssetPageContent() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-moss">
                 Photos
               </p>
-              <h2 className="mt-2 text-2xl font-semibold text-ink">Evidence first</h2>
             </div>
             <Camera className="h-6 w-6 text-slate" />
           </div>
@@ -305,7 +375,7 @@ function NewAssetPageContent() {
           <div className="mt-5 space-y-4">
             <div>
               <label className="label" htmlFor="photo-type">
-                Photo type
+                Photo of:
               </label>
               <select
                 id="photo-type"
@@ -398,12 +468,12 @@ function NewAssetPageContent() {
         </section>
       </div>
 
-      {!sites.length ? (
+      {!sites.length || !customers.length ? (
         <div className="mt-6">
           <EmptyState
-            title="No site context yet"
-            body="Create or sync a site before field capture starts."
-            action={<Link href="/sites" className="button-primary">Open site picker</Link>}
+            title="No customer or site context yet"
+            body="Create or sync a customer and site before field capture starts."
+            action={<Link href="/sites" className="button-primary">Sites</Link>}
           />
         </div>
       ) : null}

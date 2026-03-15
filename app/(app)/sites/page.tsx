@@ -95,7 +95,7 @@ export default function SitesPage() {
 
   return (
     <AppShell
-      title="Site Picker"
+      title="Sites"
       description="Keep customer and site context lightweight so you can start the asset capture flow without admin overhead."
     >
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
