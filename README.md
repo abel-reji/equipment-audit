@@ -1,4 +1,4 @@
-# Plant Audit
+# Rotating Equipment Audit
 
 Mobile-first PWA for rotating equipment audits with offline draft persistence, queued photo uploads, and Supabase-backed auth/data/storage.
 

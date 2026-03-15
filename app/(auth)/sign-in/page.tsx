@@ -70,7 +70,7 @@ function SignInPageContent() {
       <section className="panel w-full overflow-hidden">
         <div className="bg-grid bg-[size:26px_26px] px-6 py-8 md:px-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-moss">
-            Plant Audit
+            Rotating Equipment Audit
           </p>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink">
             Capture equipment before the signal comes back.

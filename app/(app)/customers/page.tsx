@@ -257,23 +257,31 @@ export default function CustomersPage() {
         </section>
 
         <section className="panel p-5 md:p-6">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <PlusCircle className="h-5 w-5 text-moss" />
-              <h2 className="text-xl font-semibold text-ink">Add customer</h2>
+          {!showCreateForm ? (
+            <div className="flex justify-center">
+              <button
+                className="button-primary w-full max-w-sm"
+                type="button"
+                onClick={() => setShowCreateForm(true)}
+              >
+                Add Customer
+              </button>
             </div>
-            <button
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/10 bg-white text-slate transition hover:border-moss hover:text-moss"
-              type="button"
-              aria-label={showCreateForm ? "Hide add customer form" : "Show add customer form"}
-              onClick={() => setShowCreateForm((current) => !current)}
-            >
-              <PlusCircle className="h-5 w-5" />
-            </button>
-          </div>
+          ) : null}
 
           {showCreateForm ? (
             <>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-xl font-semibold text-ink">Add customer</h2>
+                <button
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/10 bg-white text-slate transition hover:border-moss hover:text-moss"
+                  type="button"
+                  aria-label="Hide add customer form"
+                  onClick={() => setShowCreateForm(false)}
+                >
+                  <PlusCircle className="h-5 w-5" />
+                </button>
+              </div>
               <form className="mt-4 space-y-4" onSubmit={handleCreateCustomer}>
                 <div>
                   <label className="label" htmlFor="customer-name">
@@ -317,11 +325,7 @@ export default function CustomersPage() {
                 </p>
               </div>
             </>
-          ) : (
-            <p className="mt-4 text-sm text-slate">
-              Tap the plus icon when you need to add a new customer.
-            </p>
-          )}
+          ) : null}
         </section>
       </div>
     </AppShell>

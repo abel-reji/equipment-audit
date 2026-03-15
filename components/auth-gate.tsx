@@ -100,7 +100,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       <main className="mx-auto flex min-h-screen max-w-xl items-center px-4 py-10">
         <section className="panel w-full p-8 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-moss">
-            Plant Audit
+            Rotating Equipment Audit
           </p>
           <h1 className="mt-3 text-3xl font-semibold text-ink">
             {status === "checking" ? "Checking access" : "Redirecting to sign-in"}
@@ -121,4 +121,3 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 export function markOfflineAccessGranted() {
   grantOfflineAccess();
 }
-

@@ -1,5 +1,5 @@
 {
-  "name": "Plant Audit",
+  "name": "Rotating Equipment Audit",
   "short_name": "PlantAudit",
   "description": "Offline-capable plant rotating equipment audit workflow.",
   "display": "standalone",
@@ -15,4 +15,3 @@
     }
   ]
 }
-

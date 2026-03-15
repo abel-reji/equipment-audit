@@ -164,17 +164,17 @@ export default function SitesPage() {
           </section>
 
           <section className="panel p-5 md:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold text-ink">Add site</h2>
-              <button
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/10 bg-white text-slate transition hover:border-moss hover:text-moss"
-                type="button"
-                aria-label={showCreateForm ? "Hide add site form" : "Show add site form"}
-                onClick={() => setShowCreateForm((current) => !current)}
-              >
-                <PlusCircle className="h-5 w-5" />
-              </button>
-            </div>
+            {!customers.length ? null : !showCreateForm ? (
+              <div className="flex justify-center">
+                <button
+                  className="button-primary w-full max-w-sm"
+                  type="button"
+                  onClick={() => setShowCreateForm(true)}
+                >
+                  Add Site
+                </button>
+              </div>
+            ) : null}
             {!customers.length ? (
               <div className="mt-4">
                 <EmptyState
@@ -184,99 +184,108 @@ export default function SitesPage() {
                 />
               </div>
             ) : showCreateForm ? (
-              <form className="mt-4 space-y-4" onSubmit={handleCreateSite}>
-                <div>
-                  <label className="label" htmlFor="customer-id">
-                    Customer
-                  </label>
-                  <select
-                    id="customer-id"
-                    className="field"
-                    value={siteForm.customerId}
-                    onChange={(event) =>
-                      setSiteForm((current) => ({
-                        ...current,
-                        customerId: event.target.value
-                      }))
-                    }
+              <>
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-xl font-semibold text-ink">Add site</h2>
+                  <button
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/10 bg-white text-slate transition hover:border-moss hover:text-moss"
+                    type="button"
+                    aria-label="Hide add site form"
+                    onClick={() => setShowCreateForm(false)}
                   >
-                    <option value="">Select customer</option>
-                    {customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.name}
-                      </option>
-                    ))}
-                  </select>
+                    <PlusCircle className="h-5 w-5" />
+                  </button>
                 </div>
-
-                <div>
-                  <label className="label" htmlFor="site-name">
-                    Site name
-                  </label>
-                  <input
-                    id="site-name"
-                    className="field"
-                    value={siteForm.name}
-                    onChange={(event) =>
-                      setSiteForm((current) => ({ ...current, name: event.target.value }))
-                    }
-                    placeholder="South plant"
-                  />
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
+                <form className="mt-4 space-y-4" onSubmit={handleCreateSite}>
                   <div>
-                    <label className="label" htmlFor="site-address">
-                      Address
+                    <label className="label" htmlFor="customer-id">
+                      Customer
+                    </label>
+                    <select
+                      id="customer-id"
+                      className="field"
+                      value={siteForm.customerId}
+                      onChange={(event) =>
+                        setSiteForm((current) => ({
+                          ...current,
+                          customerId: event.target.value
+                        }))
+                      }
+                    >
+                      <option value="">Select customer</option>
+                      {customers.map((customer) => (
+                        <option key={customer.id} value={customer.id}>
+                          {customer.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="label" htmlFor="site-name">
+                      Site name
                     </label>
                     <input
-                      id="site-address"
+                      id="site-name"
                       className="field"
-                      value={siteForm.address}
+                      value={siteForm.name}
                       onChange={(event) =>
-                        setSiteForm((current) => ({ ...current, address: event.target.value }))
+                        setSiteForm((current) => ({ ...current, name: event.target.value }))
+                      }
+                      placeholder="South plant"
+                    />
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="label" htmlFor="site-address">
+                        Address
+                      </label>
+                      <input
+                        id="site-address"
+                        className="field"
+                        value={siteForm.address}
+                        onChange={(event) =>
+                          setSiteForm((current) => ({ ...current, address: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="label" htmlFor="site-area">
+                        Area or unit
+                      </label>
+                      <input
+                        id="site-area"
+                        className="field"
+                        value={siteForm.areaUnit}
+                        onChange={(event) =>
+                          setSiteForm((current) => ({ ...current, areaUnit: event.target.value }))
+                        }
+                        placeholder="Unit 300"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="label" htmlFor="site-notes">
+                      Notes
+                    </label>
+                    <textarea
+                      id="site-notes"
+                      className="field min-h-24"
+                      value={siteForm.notes}
+                      onChange={(event) =>
+                        setSiteForm((current) => ({ ...current, notes: event.target.value }))
                       }
                     />
                   </div>
-                  <div>
-                    <label className="label" htmlFor="site-area">
-                      Area or unit
-                    </label>
-                    <input
-                      id="site-area"
-                      className="field"
-                      value={siteForm.areaUnit}
-                      onChange={(event) =>
-                        setSiteForm((current) => ({ ...current, areaUnit: event.target.value }))
-                      }
-                      placeholder="Unit 300"
-                    />
-                  </div>
-                </div>
 
-                <div>
-                  <label className="label" htmlFor="site-notes">
-                    Notes
-                  </label>
-                  <textarea
-                    id="site-notes"
-                    className="field min-h-24"
-                    value={siteForm.notes}
-                    onChange={(event) =>
-                      setSiteForm((current) => ({ ...current, notes: event.target.value }))
-                    }
-                  />
-                </div>
-
-                <button className="button-primary w-full" type="submit">
-                  Save site draft
-                </button>
-              </form>
-            ) : (
-              <p className="mt-4 text-sm text-slate">
-                Tap the plus icon when you need to add a new site.
-              </p>
-            )}
+                  <button className="button-primary w-full" type="submit">
+                    Save site draft
+                  </button>
+                </form>
+              </>
+            ) : null}
           </section>
         </div>
       </div>

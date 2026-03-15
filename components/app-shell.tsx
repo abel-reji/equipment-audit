@@ -26,7 +26,7 @@ export function AppShell({
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-moss">
-                Plant Audit
+                Rotating Equipment Audit
               </p>
               <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink md:mt-2 md:text-3xl">
                 {title}

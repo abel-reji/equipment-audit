@@ -63,7 +63,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-moss">
-                Fast Start
+                Quick Start
               </p>
             </div>
             <Camera className="h-8 w-8 text-moss" />
@@ -125,8 +125,8 @@ export default function HomePage() {
             ) : (
               <EmptyState
                 title={loading ? "Loading site context" : "No sites yet"}
-                body="Create or sync a site first so field capture can start with the right context."
-                action={<Link href="/sites" className="button-primary">Open site picker</Link>}
+                body=""
+                action={<Link href="/sites" className="button-primary">Sites</Link>}
               />
             )}
           </div>

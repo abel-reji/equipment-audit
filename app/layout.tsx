@@ -5,7 +5,7 @@ import { NetworkStatusBanner } from "@/components/network-status-banner";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 
 export const metadata: Metadata = {
-  title: "Plant Audit",
+  title: "Rotating Equipment Audit",
   description: "Mobile-first rotating equipment audit workflow.",
   manifest: "/manifest.webmanifest",
   icons: {
