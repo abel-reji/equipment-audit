@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Cog, MapPinned, Rocket } from "lucide-react";
+import { ChevronRight, MapPinned, Rocket } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
@@ -66,7 +66,7 @@ export default function HomePage() {
                 Quick Start
               </p>
             </div>
-            <Rocket className="h-8 w-8 text-moss" />
+            <Rocket className="h-7 w-7 text-moss" />
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -139,7 +139,7 @@ export default function HomePage() {
                 Recent Assets
               </p>
             </div>
-            <Cog className="h-6 w-6 text-slate" />
+            <MotorIcon className="h-6 w-6 text-slate" />
           </div>
 
           <div className="mt-5 space-y-3">
@@ -186,5 +186,33 @@ function StatusRow({ label, value }: { label: string; value: string }) {
       <span className="text-sm text-slate">{label}</span>
       <span className="font-semibold text-ink">{value}</span>
     </div>
+  );
+}
+
+function MotorIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="14" y="18" width="36" height="28" rx="6" />
+      <path d="M18 12h28" />
+      <path d="M22 8h20v4H22z" />
+      <path d="M18 52h28" />
+      <path d="M22 52h20v4H22z" />
+      <path d="M8 20v24" />
+      <path d="M8 20h6v24H8" />
+      <path d="M50 24h4a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4h-4" />
+      <path d="M58 32h6" />
+      <path d="M22 26h20" />
+      <path d="M22 32h20" />
+      <path d="M22 38h20" />
+    </svg>
   );
 }
