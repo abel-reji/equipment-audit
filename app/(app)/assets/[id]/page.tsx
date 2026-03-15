@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { AppShell } from "@/components/app-shell";
+import { AppShell, ContextBar } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SyncStatusPill } from "@/components/sync-status-pill";
 import { assetStatusOptions, equipmentTypeOptions } from "@/lib/constants";
@@ -179,6 +179,13 @@ export default function AssetDetailPage({
   const detailSiteName = serverAsset?.site.name || "Local draft site";
   const detailStatus = detailAsset?.capture_status ?? localDraft?.captureStatus ?? "queued";
   const detailLocation = getDisplayedLocation(detailAsset, localDraft);
+  const detailSiteId =
+    sites.find(
+      (site) =>
+        site.id === localDraft?.siteId ||
+        site.serverId === localDraft?.siteServerId ||
+        site.serverId === serverAsset?.site.id
+    )?.id ?? localDraft?.siteId;
 
   async function handleSaveEdits() {
     try {
@@ -453,6 +460,17 @@ export default function AssetDetailPage({
     <AppShell
       title="Asset Detail"
       description="Review capture completeness, sync state, and attached photos before deeper cleanup work on desktop."
+      contextBar={
+        detailSiteId ? (
+          <ContextBar
+            items={[
+              { label: "Sites", href: "/sites" },
+              { label: detailSiteName, href: `/sites/${encodeURIComponent(detailSiteId)}` },
+              { label: "Asset Detail" }
+            ]}
+          />
+        ) : undefined
+      }
     >
       {loading ? (
         <EmptyState title="Loading asset" body="Pulling local drafts and server state into one summary." />

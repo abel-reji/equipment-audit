@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { AppShell } from "@/components/app-shell";
+import { AppShell, ContextBar } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SyncStatusPill } from "@/components/sync-status-pill";
 import { getLocalDb } from "@/lib/local-db";
@@ -265,6 +265,16 @@ export default function SiteDetailPage({
     <AppShell
       title="Site Detail"
       description="Review the customer context for this site, inspect saved assets, and jump back into capture with the site already selected."
+      contextBar={
+        site ? (
+          <ContextBar
+            items={[
+              { label: "Sites", href: "/sites" },
+              { label: site.name }
+            ]}
+          />
+        ) : undefined
+      }
     >
       {loading ? (
         <EmptyState title="Loading site" body="Pulling site context and related assets." />

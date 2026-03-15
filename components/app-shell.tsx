@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, Home, MapPinned, Search, UploadCloud } from "lucide-react";
+import { Building2, ChevronRight, Home, MapPinned, Search, UploadCloud } from "lucide-react";
 
 import { useSyncManager } from "@/hooks/use-sync-manager";
 import { formatRelativeDate } from "@/lib/utils";
@@ -10,11 +10,13 @@ import { formatRelativeDate } from "@/lib/utils";
 export function AppShell({
   children,
   title,
-  description
+  description,
+  contextBar
 }: {
   children: React.ReactNode;
   title: string;
   description?: string;
+  contextBar?: React.ReactNode;
 }) {
   const pathname = usePathname();
   const { isSyncing, lastSyncedAt, syncNow } = useSyncManager();
@@ -48,6 +50,7 @@ export function AppShell({
               </button>
             </div>
           </div>
+          {contextBar ? <div className="mt-4">{contextBar}</div> : null}
         </div>
       </header>
 
@@ -90,6 +93,29 @@ export function AppShell({
           </Link>
         </div>
       </nav>
+    </div>
+  );
+}
+
+export function ContextBar({
+  items
+}: {
+  items: Array<{ label: string; href?: string }>;
+}) {
+  return (
+    <div className="flex items-center gap-1 overflow-x-auto rounded-2xl border border-ink/10 bg-white/70 px-3 py-2 text-xs text-slate">
+      {items.map((item, index) => (
+        <div key={`${item.label}-${index}`} className="flex items-center gap-1 whitespace-nowrap">
+          {item.href ? (
+            <Link href={item.href} className="font-medium text-ink transition hover:text-moss">
+              {item.label}
+            </Link>
+          ) : (
+            <span className="font-medium text-ink">{item.label}</span>
+          )}
+          {index < items.length - 1 ? <ChevronRight className="h-3.5 w-3.5 text-slate/70" /> : null}
+        </div>
+      ))}
     </div>
   );
 }

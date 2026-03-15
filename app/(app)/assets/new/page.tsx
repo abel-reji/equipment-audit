@@ -5,7 +5,7 @@ import { Camera, CheckCircle2, MapPin } from "lucide-react";
 import { Suspense, useEffect, useId, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { AppShell } from "@/components/app-shell";
+import { AppShell, ContextBar } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SyncStatusPill } from "@/components/sync-status-pill";
 import { equipmentTypeOptions, photoTypeOptions } from "@/lib/constants";
@@ -98,7 +98,6 @@ function NewAssetPageContent() {
     () => sites.find((site) => site.id === form.siteId || site.serverId === form.siteId),
     [form.siteId, sites]
   );
-
   const filteredSites = useMemo(() => {
     if (!form.customerId) {
       return [];
@@ -219,6 +218,20 @@ function NewAssetPageContent() {
     <AppShell
       title="New Asset"
       description="Capture only the details you can reliably grab in the field. Everything else can wait for desktop cleanup."
+      contextBar={
+        selectedSite ? (
+          <ContextBar
+            items={[
+              { label: "Sites", href: "/sites" },
+              {
+                label: selectedSite.name,
+                href: selectedSite.id ? `/sites/${encodeURIComponent(selectedSite.id)}` : undefined
+              },
+              { label: "New Asset" }
+            ]}
+          />
+        ) : undefined
+      }
     >
       <div className="grid gap-6 lg:grid-cols-[1fr_0.92fr]">
         <section className="panel p-5 md:p-6">
