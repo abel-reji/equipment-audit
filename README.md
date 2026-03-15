@@ -146,7 +146,7 @@ The CSV currently includes:
 - No OCR or AI extraction yet.
 - No role-based multi-user admin beyond account isolation.
 
-## Recommended next features
+## Planned next features
 
 - Open geotagged assets in Apple Maps / Google Maps
 - Duplicate asset from an existing record
