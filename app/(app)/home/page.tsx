@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Camera, ChevronRight, MapPinned, Search } from "lucide-react";
+import { ChevronRight, Cog, MapPinned, Rocket } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
@@ -66,7 +66,7 @@ export default function HomePage() {
                 Quick Start
               </p>
             </div>
-            <Camera className="h-8 w-8 text-moss" />
+            <Rocket className="h-8 w-8 text-moss" />
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -139,7 +139,7 @@ export default function HomePage() {
                 Recent Assets
               </p>
             </div>
-            <Search className="h-6 w-6 text-slate" />
+            <Cog className="h-6 w-6 text-slate" />
           </div>
 
           <div className="mt-5 space-y-3">
