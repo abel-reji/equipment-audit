@@ -17,7 +17,14 @@ import {
   seedCustomers,
   seedSites
 } from "@/lib/local-data";
-import type { CachedCustomer, CachedSite, DraftPhoto, PhotoType } from "@/lib/types";
+import type {
+  AssetCouplingDetails,
+  AssetDriverDetails,
+  CachedCustomer,
+  CachedSite,
+  DraftPhoto,
+  PhotoType
+} from "@/lib/types";
 import { formatRelativeDate, makeClientId } from "@/lib/utils";
 
 interface CapturedLocation {
@@ -33,8 +40,26 @@ const initialAssetForm = {
   equipmentType: "pump",
   equipmentTag: "",
   manufacturer: "",
+  model: "",
+  serial: "",
   quickNote: "",
-  temporaryIdentifier: ""
+  temporaryIdentifier: "",
+  driver: {
+    motorOem: "",
+    motorModel: "",
+    serialNumber: "",
+    hp: "",
+    rpm: "",
+    voltage: "",
+    frame: ""
+  } satisfies AssetDriverDetails,
+  coupling: {
+    oem: "",
+    couplingType: "",
+    size: "",
+    spacer: "",
+    notes: ""
+  } satisfies AssetCouplingDetails
 };
 
 export default function NewAssetPage() {
@@ -160,12 +185,16 @@ function NewAssetPageContent() {
       equipmentType: form.equipmentType as typeof equipmentTypeOptions[number],
       equipmentTag: form.equipmentTag,
       manufacturer: form.manufacturer,
+      model: form.model,
+      serial: form.serial,
       latitude: location?.latitude,
       longitude: location?.longitude,
       locationAccuracyMeters: location?.accuracy ?? undefined,
       locationCapturedAt: location?.capturedAt,
       quickNote: form.quickNote,
       temporaryIdentifier: form.temporaryIdentifier,
+      driver: form.driver,
+      coupling: form.coupling,
       photoCount: photos.length
     });
 
@@ -341,6 +370,21 @@ function NewAssetPageContent() {
               onChange={(value) => setForm((current) => ({ ...current, manufacturer: value }))}
             />
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                id="equipment-model"
+                label="Model"
+                value={form.model}
+                onChange={(value) => setForm((current) => ({ ...current, model: value }))}
+              />
+              <TextField
+                id="equipment-serial"
+                label="Serial"
+                value={form.serial}
+                onChange={(value) => setForm((current) => ({ ...current, serial: value }))}
+              />
+            </div>
+
             <div>
               <label className="label" htmlFor="quick-note">
                 Quick note
@@ -353,6 +397,161 @@ function NewAssetPageContent() {
                   setForm((current) => ({ ...current, quickNote: event.target.value }))
                 }
               />
+            </div>
+
+            <div className="rounded-3xl bg-mist p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-moss">
+                Driver
+              </div>
+              <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                <TextField
+                  id="driver-motor-oem"
+                  label="Motor OEM"
+                  value={form.driver.motorOem || ""}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      driver: { ...current.driver, motorOem: value }
+                    }))
+                  }
+                />
+                <TextField
+                  id="driver-motor-model"
+                  label="Motor model"
+                  value={form.driver.motorModel || ""}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      driver: { ...current.driver, motorModel: value }
+                    }))
+                  }
+                />
+                <TextField
+                  id="driver-serial"
+                  label="Driver serial no."
+                  value={form.driver.serialNumber || ""}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      driver: { ...current.driver, serialNumber: value }
+                    }))
+                  }
+                />
+                <TextField
+                  id="driver-hp"
+                  label="HP"
+                  value={form.driver.hp || ""}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      driver: { ...current.driver, hp: value }
+                    }))
+                  }
+                />
+                <TextField
+                  id="driver-rpm"
+                  label="RPM"
+                  value={form.driver.rpm || ""}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      driver: { ...current.driver, rpm: value }
+                    }))
+                  }
+                />
+                <TextField
+                  id="driver-voltage"
+                  label="Voltage"
+                  value={form.driver.voltage || ""}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      driver: { ...current.driver, voltage: value }
+                    }))
+                  }
+                />
+                <TextField
+                  id="driver-frame"
+                  label="Frame"
+                  value={form.driver.frame || ""}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      driver: { ...current.driver, frame: value }
+                    }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="rounded-3xl bg-mist p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-moss">
+                Coupling
+              </div>
+              <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                <TextField
+                  id="coupling-oem"
+                  label="Coupling OEM"
+                  value={form.coupling.oem || ""}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      coupling: { ...current.coupling, oem: value }
+                    }))
+                  }
+                />
+                <TextField
+                  id="coupling-type"
+                  label="Type"
+                  value={form.coupling.couplingType || ""}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      coupling: { ...current.coupling, couplingType: value }
+                    }))
+                  }
+                />
+                <TextField
+                  id="coupling-size"
+                  label="Size"
+                  value={form.coupling.size || ""}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      coupling: { ...current.coupling, size: value }
+                    }))
+                  }
+                />
+                <TextField
+                  id="coupling-spacer"
+                  label="Spacer"
+                  value={form.coupling.spacer || ""}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      coupling: { ...current.coupling, spacer: value }
+                    }))
+                  }
+                />
+              </div>
+              <div className="mt-4">
+                <div>
+                  <label className="label" htmlFor="coupling-notes">
+                    Coupling notes
+                  </label>
+                  <textarea
+                    id="coupling-notes"
+                    className="field min-h-24"
+                    value={form.coupling.notes || ""}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        coupling: { ...current.coupling, notes: event.target.value }
+                      }))
+                    }
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="rounded-3xl bg-mist p-4">

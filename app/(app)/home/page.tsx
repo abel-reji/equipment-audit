@@ -9,12 +9,13 @@ import { EmptyState } from "@/components/empty-state";
 import { SyncStatusPill } from "@/components/sync-status-pill";
 import { getLocalDb } from "@/lib/local-db";
 import { seedCustomers, seedSites } from "@/lib/local-data";
-import type { AssetDraft, CachedSite } from "@/lib/types";
+import type { AssetDraft, CachedCustomer, CachedSite } from "@/lib/types";
 import { formatRelativeDate } from "@/lib/utils";
 
 export default function HomePage() {
   const [recentSites, setRecentSites] = useState<CachedSite[]>([]);
   const [recentAssets, setRecentAssets] = useState<AssetDraft[]>([]);
+  const [customers, setCustomers] = useState<CachedCustomer[]>([]);
   const [queuedAssetCount, setQueuedAssetCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState<boolean | null>(null);
@@ -22,13 +23,15 @@ export default function HomePage() {
   useEffect(() => {
     async function load() {
       const db = getLocalDb();
-      const [localSites, localAssets] = await Promise.all([
+      const [localSites, localAssets, localCustomers] = await Promise.all([
         db.sites.orderBy("lastUsedAt").reverse().limit(3).toArray(),
-        db.assetDrafts.orderBy("updatedAt").reverse().limit(3).toArray()
+        db.assetDrafts.orderBy("updatedAt").reverse().limit(3).toArray(),
+        db.customers.orderBy("name").toArray()
       ]);
 
       setRecentSites(localSites);
       setRecentAssets(localAssets);
+      setCustomers(localCustomers);
       setQueuedAssetCount(
         localAssets.filter((asset) => asset.captureStatus !== "synced").length
       );
@@ -39,8 +42,12 @@ export default function HomePage() {
           const data = await response.json();
           await seedCustomers(data.customers ?? []);
           await seedSites(data.sites ?? []);
-          const seededSites = await db.sites.orderBy("lastUsedAt").reverse().limit(3).toArray();
+          const [seededSites, seededCustomers] = await Promise.all([
+            db.sites.orderBy("lastUsedAt").reverse().limit(3).toArray(),
+            db.customers.orderBy("name").toArray()
+          ]);
           setRecentSites(seededSites);
+          setCustomers(seededCustomers);
         }
       } finally {
         setLoading(false);
@@ -114,6 +121,13 @@ export default function HomePage() {
                   className="flex items-center justify-between rounded-3xl border border-ink/10 bg-white px-4 py-4 transition hover:border-moss/50"
                 >
                   <div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-moss">
+                      {customers.find(
+                        (customer) =>
+                          customer.id === site.customerId ||
+                          customer.serverId === site.customerServerId
+                      )?.name || "Unknown customer"}
+                    </div>
                     <div className="font-semibold text-ink">{site.name}</div>
                     <div className="text-sm text-slate">
                       {site.areaUnit || site.address || "No area noted"}
