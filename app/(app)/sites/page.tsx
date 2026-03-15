@@ -17,6 +17,7 @@ export default function SitesPage() {
   const [sites, setSites] = useState<CachedSite[]>([]);
   const [search, setSearch] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [customerQuery, setCustomerQuery] = useState("");
   const [siteForm, setSiteForm] = useState({
     customerId: "",
     name: "",
@@ -73,6 +74,9 @@ export default function SitesPage() {
       areaUnit: "",
       notes: ""
     });
+    setCustomerQuery(
+      customers.find((customer) => customer.id === siteForm.customerId)?.name || ""
+    );
     setShowCreateForm(false);
     await refreshLocalState();
   }
@@ -191,7 +195,10 @@ export default function SitesPage() {
                     className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/10 bg-white text-slate transition hover:border-moss hover:text-moss"
                     type="button"
                     aria-label="Hide add site form"
-                    onClick={() => setShowCreateForm(false)}
+                    onClick={() => {
+                      setShowCreateForm(false);
+                      setCustomerQuery("");
+                    }}
                   >
                     <PlusCircle className="h-5 w-5" />
                   </button>
@@ -201,24 +208,35 @@ export default function SitesPage() {
                     <label className="label" htmlFor="customer-id">
                       Customer
                     </label>
-                    <select
+                    <input
                       id="customer-id"
                       className="field"
-                      value={siteForm.customerId}
-                      onChange={(event) =>
+                      list="customer-options"
+                      value={customerQuery}
+                      placeholder="Type or select customer"
+                      onChange={(event) => {
+                        const nextQuery = event.target.value;
+                        const matchedCustomer = customers.find(
+                          (customer) => customer.name.toLowerCase() === nextQuery.trim().toLowerCase()
+                        );
+
+                        setCustomerQuery(nextQuery);
                         setSiteForm((current) => ({
                           ...current,
-                          customerId: event.target.value
-                        }))
-                      }
-                    >
-                      <option value="">Select customer</option>
+                          customerId: matchedCustomer?.id ?? ""
+                        }));
+                      }}
+                    />
+                    <datalist id="customer-options">
                       {customers.map((customer) => (
-                        <option key={customer.id} value={customer.id}>
-                          {customer.name}
-                        </option>
+                        <option key={customer.id} value={customer.name} />
                       ))}
-                    </select>
+                    </datalist>
+                    {!siteForm.customerId && customerQuery ? (
+                      <p className="mt-2 text-xs text-slate">
+                        Select an existing customer from the suggestions to continue.
+                      </p>
+                    ) : null}
                   </div>
 
                   <div>
