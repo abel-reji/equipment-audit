@@ -86,6 +86,10 @@ const patchSchema = z.object({
   serial: z.string().max(120).optional(),
   serviceApplication: z.string().max(160).optional(),
   status: z.enum(assetStatusOptions).optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+  locationAccuracyMeters: z.number().nonnegative().optional(),
+  locationCapturedAt: z.string().datetime().optional(),
   temporaryIdentifier: z.string().max(120).optional(),
   quickNote: z.string().max(800).optional(),
   driver: z
@@ -146,6 +150,18 @@ export async function PATCH(
     }
     if (body.status !== undefined) {
       updatePayload.status = body.status;
+    }
+    if (body.latitude !== undefined) {
+      updatePayload.latitude = String(body.latitude);
+    }
+    if (body.longitude !== undefined) {
+      updatePayload.longitude = String(body.longitude);
+    }
+    if (body.locationAccuracyMeters !== undefined) {
+      updatePayload.location_accuracy_meters = String(body.locationAccuracyMeters);
+    }
+    if (body.locationCapturedAt !== undefined) {
+      updatePayload.location_captured_at = body.locationCapturedAt;
     }
     if (body.temporaryIdentifier !== undefined) {
       updatePayload.temporary_identifier = body.temporaryIdentifier || null;

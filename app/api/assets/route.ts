@@ -61,6 +61,10 @@ export async function POST(request: Request) {
           serial: body.serial || null,
           service_application: body.serviceApplication || null,
           status: body.status || "unknown",
+          latitude: body.latitude ?? null,
+          longitude: body.longitude ?? null,
+          location_accuracy_meters: body.locationAccuracyMeters ?? null,
+          location_captured_at: body.locationCapturedAt ?? null,
           quick_note: body.quickNote || null,
           capture_status: captureStatus,
           captured_at: new Date().toISOString()

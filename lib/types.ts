@@ -85,6 +85,10 @@ export interface AssetRecord {
   serial: string | null;
   service_application: string | null;
   status: AssetStatus;
+  latitude: number | null;
+  longitude: number | null;
+  location_accuracy_meters: number | null;
+  location_captured_at: string | null;
   quick_note: string | null;
   capture_status: SyncStatus;
   captured_at: string;
@@ -169,6 +173,10 @@ export interface AssetDraft {
   serial?: string;
   serviceApplication?: string;
   status?: AssetStatus;
+  latitude?: number;
+  longitude?: number;
+  locationAccuracyMeters?: number;
+  locationCapturedAt?: string;
   quickNote?: string;
   temporaryIdentifier?: string;
   driver?: AssetDriverDetails;

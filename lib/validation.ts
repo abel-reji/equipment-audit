@@ -31,6 +31,10 @@ export const assetDraftSchema = z.object({
   serial: z.string().max(120).optional().or(z.literal("")),
   serviceApplication: z.string().max(160).optional().or(z.literal("")),
   status: z.enum(assetStatusOptions).optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+  locationAccuracyMeters: z.number().nonnegative().optional(),
+  locationCapturedAt: z.string().datetime().optional(),
   quickNote: z.string().max(800).optional().or(z.literal("")),
   temporaryIdentifier: z.string().max(120).optional().or(z.literal("")),
   driver: z

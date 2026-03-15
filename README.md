@@ -15,7 +15,7 @@ Mobile-first PWA for rotating equipment audits with offline draft persistence, q
 1. Install Node.js 20 or newer.
 2. Copy `.env.example` to `.env.local`.
 3. Fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-4. Apply the SQL migrations in [20260314131500_init.sql](/C:/Users/abel/OneDrive/Documents/plant-audit/supabase/migrations/20260314131500_init.sql) and [20260314170000_asset_enrichment.sql](/C:/Users/abel/OneDrive/Documents/plant-audit/supabase/migrations/20260314170000_asset_enrichment.sql).
+4. Apply the SQL migrations in [20260314131500_init.sql](/C:/Users/abel/OneDrive/Documents/plant-audit/supabase/migrations/20260314131500_init.sql), [20260314170000_asset_enrichment.sql](/C:/Users/abel/OneDrive/Documents/plant-audit/supabase/migrations/20260314170000_asset_enrichment.sql), and [20260314183000_asset_geotagging.sql](/C:/Users/abel/OneDrive/Documents/plant-audit/supabase/migrations/20260314183000_asset_geotagging.sql).
 5. Run `npm install`.
 6. Run `npm run dev`.
 

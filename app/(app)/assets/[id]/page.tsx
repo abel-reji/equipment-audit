@@ -52,6 +52,13 @@ interface AssetDetailFormState {
   coupling: AssetCouplingDetails;
 }
 
+interface CapturedLocation {
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  capturedAt: string;
+}
+
 export default function AssetDetailPage({
   params
 }: {
@@ -65,6 +72,8 @@ export default function AssetDetailPage({
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [locationError, setLocationError] = useState("");
+  const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   const [form, setForm] = useState<AssetDetailFormState>({
     siteId: "",
     equipmentType: "pump",
@@ -167,6 +176,7 @@ export default function AssetDetailPage({
   const detailAsset = serverAsset?.asset;
   const detailSiteName = serverAsset?.site.name || "Local draft site";
   const detailStatus = detailAsset?.capture_status ?? localDraft?.captureStatus ?? "queued";
+  const detailLocation = getDisplayedLocation(detailAsset, localDraft);
 
   async function handleSaveEdits() {
     try {
@@ -336,6 +346,103 @@ export default function AssetDetailPage({
       router.push("/home");
     } finally {
       setIsDeleting(false);
+    }
+  }
+
+  async function handleCaptureLocation() {
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      setLocationError("Geolocation is not supported on this device.");
+      return;
+    }
+
+    try {
+      setLocationError("");
+      setIsCapturingLocation(true);
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
+        });
+      });
+
+      const capturedLocation: CapturedLocation = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null,
+        capturedAt: new Date().toISOString()
+      };
+
+      if (localDraft) {
+        const nextLocalStatus =
+          localDraft.serverId || serverAsset?.asset.id
+            ? navigator.onLine
+              ? "queued"
+              : "local-only"
+            : localDraft.captureStatus;
+
+        await updateAssetDraft(localDraft.id, {
+          latitude: capturedLocation.latitude,
+          longitude: capturedLocation.longitude,
+          locationAccuracyMeters: capturedLocation.accuracy ?? undefined,
+          locationCapturedAt: capturedLocation.capturedAt
+        });
+
+        setLocalDraft((current) =>
+          current
+            ? {
+                ...current,
+                latitude: capturedLocation.latitude,
+                longitude: capturedLocation.longitude,
+                locationAccuracyMeters: capturedLocation.accuracy ?? undefined,
+                locationCapturedAt: capturedLocation.capturedAt,
+                captureStatus: nextLocalStatus,
+                updatedAt: new Date().toISOString()
+              }
+            : current
+        );
+      } else if (!navigator.onLine) {
+        throw new Error("This asset is not cached locally. Reconnect before capturing location.");
+      }
+
+      if (navigator.onLine && (serverAsset?.asset.id || localDraft?.serverId)) {
+        const response = await fetch(
+          `/api/assets/${encodeURIComponent(serverAsset?.asset.id ?? localDraft?.serverId ?? params.id)}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              latitude: capturedLocation.latitude,
+              longitude: capturedLocation.longitude,
+              locationAccuracyMeters: capturedLocation.accuracy,
+              locationCapturedAt: capturedLocation.capturedAt
+            })
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Unable to save location");
+        }
+      }
+
+      setServerAsset((current) =>
+        current
+          ? {
+              ...current,
+              asset: {
+                ...current.asset,
+                latitude: capturedLocation.latitude,
+                longitude: capturedLocation.longitude,
+                location_accuracy_meters: capturedLocation.accuracy,
+                location_captured_at: capturedLocation.capturedAt
+              }
+            }
+          : current
+      );
+    } catch (error) {
+      setLocationError(formatLocationError(error));
+    } finally {
+      setIsCapturingLocation(false);
     }
   }
 
@@ -676,6 +783,7 @@ export default function AssetDetailPage({
                   label="Quick note"
                   value={detailAsset?.quick_note || localDraft?.quickNote || "Not entered"}
                 />
+                <DetailRow label="Geotag" value={formatLocationSummary(detailLocation)} />
                 <DetailRow label="Site" value={detailSiteName} />
                 <DetailRow
                   label="Captured"
@@ -710,6 +818,14 @@ export default function AssetDetailPage({
                   <button
                     className="button-secondary"
                     type="button"
+                    onClick={() => void handleCaptureLocation()}
+                    disabled={isCapturingLocation}
+                  >
+                    {isCapturingLocation ? "Capturing location..." : "Capture location"}
+                  </button>
+                  <button
+                    className="button-secondary"
+                    type="button"
                     onClick={() => void handleDeleteAsset()}
                     disabled={isDeleting}
                   >
@@ -724,6 +840,9 @@ export default function AssetDetailPage({
 
             {saveError ? (
               <p className="mt-4 rounded-2xl bg-mist px-4 py-3 text-sm text-slate">{saveError}</p>
+            ) : null}
+            {locationError ? (
+              <p className="mt-4 rounded-2xl bg-mist px-4 py-3 text-sm text-slate">{locationError}</p>
             ) : null}
           </section>
 
@@ -858,4 +977,53 @@ function formatCouplingSummary(
   ].filter(Boolean);
 
   return values.length ? values.join(" | ") : "Not entered";
+}
+
+function getDisplayedLocation(
+  asset?: AssetSummary["asset"],
+  draft?: AssetDraft | null
+): CapturedLocation | null {
+  const latitude = draft?.latitude ?? asset?.latitude;
+  const longitude = draft?.longitude ?? asset?.longitude;
+
+  if (latitude === undefined || latitude === null || longitude === undefined || longitude === null) {
+    return null;
+  }
+
+  return {
+    latitude,
+    longitude,
+    accuracy: draft?.locationAccuracyMeters ?? asset?.location_accuracy_meters ?? null,
+    capturedAt: draft?.locationCapturedAt ?? asset?.location_captured_at ?? asset?.updated_at ?? ""
+  };
+}
+
+function formatLocationSummary(location: CapturedLocation | null) {
+  if (!location) {
+    return "Not captured";
+  }
+
+  const latitude = location.latitude.toFixed(6);
+  const longitude = location.longitude.toFixed(6);
+  const accuracy = location.accuracy ? ` ±${Math.round(location.accuracy)}m` : "";
+  const capturedAt = location.capturedAt ? ` | ${formatRelativeDate(location.capturedAt)}` : "";
+
+  return `${latitude}, ${longitude}${accuracy}${capturedAt}`;
+}
+
+function formatLocationError(error: unknown) {
+  if (typeof GeolocationPositionError !== "undefined" && error instanceof GeolocationPositionError) {
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        return "Location access was denied. Allow location permission and try again.";
+      case error.POSITION_UNAVAILABLE:
+        return "The device could not determine a location.";
+      case error.TIMEOUT:
+        return "Location capture timed out. Try again outside or with a stronger signal.";
+      default:
+        return error.message || "Unable to capture location.";
+    }
+  }
+
+  return error instanceof Error ? error.message : "Unable to capture location.";
 }
