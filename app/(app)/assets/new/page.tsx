@@ -375,9 +375,9 @@ function NewAssetPageContent() {
             )}
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <div className="safe-bottom sticky bottom-20 z-20 mt-6 grid gap-3 rounded-3xl bg-white/92 p-3 shadow-panel backdrop-blur sm:grid-cols-2 md:static md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
             <button
-              className="button-primary"
+              className="button-primary w-full"
               type="button"
               onClick={() => void handleSaveDraft()}
               disabled={!form.siteId || photos.length < 1}
@@ -385,12 +385,12 @@ function NewAssetPageContent() {
               Save draft
             </button>
             {saved ? (
-              <Link href={`/assets/${encodeURIComponent(assetId)}`} className="button-secondary">
+              <Link href={`/assets/${encodeURIComponent(assetId)}`} className="button-secondary w-full">
                 <CheckCircle2 className="mr-2 h-4 w-4" />
                 Open draft
               </Link>
             ) : (
-              <Link href="/sites" className="button-secondary">
+              <Link href="/sites" className="button-secondary w-full">
                 Change site
               </Link>
             )}

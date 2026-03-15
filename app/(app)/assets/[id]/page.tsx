@@ -800,23 +800,23 @@ export default function AssetDetailPage({
               </div>
             )}
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="safe-bottom sticky bottom-20 z-20 mt-6 flex flex-col gap-3 rounded-3xl bg-white/92 p-3 shadow-panel backdrop-blur sm:flex-row sm:flex-wrap md:static md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
               {isEditing ? (
                 <>
-                  <button className="button-primary" type="button" onClick={() => void handleSaveEdits()}>
+                  <button className="button-primary w-full sm:w-auto" type="button" onClick={() => void handleSaveEdits()}>
                     Save changes
                   </button>
-                  <button className="button-secondary" type="button" onClick={() => setIsEditing(false)}>
+                  <button className="button-secondary w-full sm:w-auto" type="button" onClick={() => setIsEditing(false)}>
                     Cancel
                   </button>
                 </>
               ) : (
                 <>
-                  <button className="button-primary" type="button" onClick={() => setIsEditing(true)}>
+                  <button className="button-primary w-full sm:w-auto" type="button" onClick={() => setIsEditing(true)}>
                     Edit asset
                   </button>
                   <button
-                    className="button-secondary"
+                    className="button-secondary w-full sm:w-auto"
                     type="button"
                     onClick={() => void handleCaptureLocation()}
                     disabled={isCapturingLocation}
@@ -824,14 +824,14 @@ export default function AssetDetailPage({
                     {isCapturingLocation ? "Capturing location..." : "Capture location"}
                   </button>
                   <button
-                    className="button-secondary"
+                    className="button-secondary w-full sm:w-auto"
                     type="button"
                     onClick={() => void handleDeleteAsset()}
                     disabled={isDeleting}
                   >
                     {isDeleting ? "Deleting..." : "Delete asset"}
                   </button>
-                  <Link href="/assets/new" className="button-secondary">
+                  <Link href="/assets/new" className="button-secondary w-full sm:w-auto">
                     Capture another asset
                   </Link>
                 </>
