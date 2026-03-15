@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ChevronRight, MapPinned, Rocket } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
@@ -12,9 +12,20 @@ import { seedCustomers, seedSites } from "@/lib/local-data";
 import type { AssetDraft, CachedCustomer, CachedSite } from "@/lib/types";
 import { formatRelativeDate } from "@/lib/utils";
 
+interface ServerAsset {
+  id: string;
+  equipment_tag?: string | null;
+  equipment_type: string;
+  manufacturer?: string | null;
+  temporary_identifier?: string | null;
+  capture_status: AssetDraft["captureStatus"];
+  updated_at: string;
+}
+
 export default function HomePage() {
   const [recentSites, setRecentSites] = useState<CachedSite[]>([]);
-  const [recentAssets, setRecentAssets] = useState<AssetDraft[]>([]);
+  const [localAssets, setLocalAssets] = useState<AssetDraft[]>([]);
+  const [serverAssets, setServerAssets] = useState<ServerAsset[]>([]);
   const [customers, setCustomers] = useState<CachedCustomer[]>([]);
   const [queuedAssetCount, setQueuedAssetCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -23,31 +34,40 @@ export default function HomePage() {
   useEffect(() => {
     async function load() {
       const db = getLocalDb();
-      const [localSites, localAssets, localCustomers] = await Promise.all([
-        db.sites.orderBy("lastUsedAt").reverse().limit(3).toArray(),
-        db.assetDrafts.orderBy("updatedAt").reverse().limit(3).toArray(),
+      const [localSites, draftAssets, localCustomers] = await Promise.all([
+        db.sites.toArray(),
+        db.assetDrafts.orderBy("updatedAt").reverse().toArray(),
         db.customers.orderBy("name").toArray()
       ]);
 
-      setRecentSites(localSites);
-      setRecentAssets(localAssets);
+      setRecentSites(sortRecentSites(localSites));
+      setLocalAssets(draftAssets);
       setCustomers(localCustomers);
       setQueuedAssetCount(
-        localAssets.filter((asset) => asset.captureStatus !== "synced").length
+        draftAssets.filter((asset) => asset.captureStatus !== "synced").length
       );
 
       try {
-        const response = await fetch("/api/bootstrap", { cache: "no-store" });
-        if (response.ok) {
-          const data = await response.json();
+        const [bootstrapResponse, assetsResponse] = await Promise.all([
+          fetch("/api/bootstrap", { cache: "no-store" }),
+          fetch("/api/assets", { cache: "no-store" })
+        ]);
+
+        if (bootstrapResponse.ok) {
+          const data = await bootstrapResponse.json();
           await seedCustomers(data.customers ?? []);
           await seedSites(data.sites ?? []);
           const [seededSites, seededCustomers] = await Promise.all([
-            db.sites.orderBy("lastUsedAt").reverse().limit(3).toArray(),
+            db.sites.toArray(),
             db.customers.orderBy("name").toArray()
           ]);
-          setRecentSites(seededSites);
+          setRecentSites(sortRecentSites(seededSites));
           setCustomers(seededCustomers);
+        }
+
+        if (assetsResponse.ok) {
+          const data = await assetsResponse.json();
+          setServerAssets(data.assets ?? []);
         }
       } finally {
         setLoading(false);
@@ -61,10 +81,51 @@ export default function HomePage() {
     setIsOnline(navigator.onLine);
   }, []);
 
+  const recentAssets = useMemo(() => {
+    const localByServerId = new Map(
+      localAssets
+        .filter((asset) => asset.serverId)
+        .map((asset) => [asset.serverId as string, asset])
+    );
+
+    const mergedServerAssets = serverAssets.map((asset) => ({
+      id: localByServerId.get(asset.id)?.id ?? asset.id,
+      href: `/assets/${encodeURIComponent(asset.id)}`,
+      equipmentType: asset.equipment_type,
+      equipmentTag:
+        localByServerId.get(asset.id)?.equipmentTag ?? asset.equipment_tag ?? undefined,
+      manufacturer:
+        localByServerId.get(asset.id)?.manufacturer ??
+        asset.manufacturer ??
+        localByServerId.get(asset.id)?.temporaryIdentifier ??
+        asset.temporary_identifier ??
+        undefined,
+      updatedAt: localByServerId.get(asset.id)?.updatedAt ?? asset.updated_at,
+      status: localByServerId.get(asset.id)?.captureStatus ?? asset.capture_status
+    }));
+
+    const localOnlyAssets = localAssets
+      .filter(
+        (asset) =>
+          !asset.serverId || !serverAssets.some((serverAsset) => serverAsset.id === asset.serverId)
+      )
+      .map((asset) => ({
+        id: asset.id,
+        href: `/assets/${encodeURIComponent(asset.id)}`,
+        equipmentType: asset.equipmentType,
+        equipmentTag: asset.equipmentTag,
+        manufacturer: asset.manufacturer || asset.temporaryIdentifier,
+        updatedAt: asset.updatedAt,
+        status: asset.captureStatus
+      }));
+
+    return [...localOnlyAssets, ...mergedServerAssets]
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, 3);
+  }, [localAssets, serverAssets]);
+
   return (
-    <AppShell
-      title="Field Capture"
-    >
+    <AppShell title="Field Capture">
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <section className="panel p-5 md:p-6">
           <div className="flex items-center justify-between">
@@ -80,8 +141,8 @@ export default function HomePage() {
             <Link href="/sites" className="button-primary">
               Pick site
             </Link>
-            <Link href="/search" className="button-secondary">
-              Search customers or sites
+            <Link href="/more" className="button-secondary">
+              More
             </Link>
           </div>
         </section>
@@ -140,7 +201,11 @@ export default function HomePage() {
               <EmptyState
                 title={loading ? "Loading site context" : "No sites yet"}
                 body=""
-                action={<Link href="/sites" className="button-primary">Sites</Link>}
+                action={
+                  <Link href="/sites" className="button-primary">
+                    Sites
+                  </Link>
+                }
               />
             )}
           </div>
@@ -161,23 +226,23 @@ export default function HomePage() {
               recentAssets.map((asset) => (
                 <Link
                   key={asset.id}
-                  href={`/assets/${encodeURIComponent(asset.serverId ?? asset.id)}`}
+                  href={asset.href}
                   className="block rounded-3xl border border-ink/10 bg-white px-4 py-4 transition hover:border-moss/50"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="font-semibold capitalize text-ink">
                         {asset.equipmentType}
-                        {asset.equipmentTag ? ` · ${asset.equipmentTag}` : ""}
+                        {asset.equipmentTag ? ` | ${asset.equipmentTag}` : ""}
                       </div>
                       <div className="mt-1 text-sm text-slate">
-                        {asset.manufacturer || asset.temporaryIdentifier || "No manufacturer or temp ID"}
+                        {asset.manufacturer || "No manufacturer or temp ID"}
                       </div>
                       <div className="mt-2 text-xs text-slate">
                         Updated {formatRelativeDate(asset.updatedAt)}
                       </div>
                     </div>
-                    <SyncStatusPill status={asset.captureStatus} />
+                    <SyncStatusPill status={asset.status} />
                   </div>
                 </Link>
               ))
@@ -229,4 +294,12 @@ function MotorIcon({ className }: { className?: string }) {
       <path d="M22 38h20" />
     </svg>
   );
+}
+
+function sortRecentSites(sites: CachedSite[]) {
+  return [...sites]
+    .sort((a, b) =>
+      (b.lastUsedAt ?? b.updatedAt ?? "").localeCompare(a.lastUsedAt ?? a.updatedAt ?? "")
+    )
+    .slice(0, 3);
 }
