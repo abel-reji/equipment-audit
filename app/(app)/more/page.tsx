@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, ChevronRight, Map } from "lucide-react";
+import { BarChart3, ChevronRight, ClipboardCheck, Map } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
 
@@ -12,6 +12,25 @@ export default function MorePage() {
       description="Secondary tools that do not need a dedicated spot in the main mobile nav."
     >
       <div className="grid gap-6 lg:grid-cols-2">
+        <Link
+          href="/pm"
+          className="panel flex items-center justify-between p-5 transition hover:border-moss/40 hover:bg-white/90 md:p-6"
+        >
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-moss">
+              PM Tracker
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold text-ink">Preventive Maintenance</h2>
+            <p className="mt-2 text-sm text-slate">
+              Track recurring PM schedules, due assets, and completed maintenance logs.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-slate">
+            <ClipboardCheck className="h-6 w-6" />
+            <ChevronRight className="h-5 w-5" />
+          </div>
+        </Link>
+
         <Link
           href="/reports"
           className="panel flex items-center justify-between p-5 transition hover:border-moss/40 hover:bg-white/90 md:p-6"

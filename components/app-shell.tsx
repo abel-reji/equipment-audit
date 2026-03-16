@@ -83,7 +83,9 @@ export function AppShell({
             active={
               pathname === "/more" ||
               pathname === "/reports" ||
-              pathname === "/maps"
+              pathname === "/maps" ||
+              pathname === "/pm" ||
+              pathname?.startsWith("/pm/")
             }
           />
           <Link

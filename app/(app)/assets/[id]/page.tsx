@@ -893,6 +893,14 @@ export default function AssetDetailPage({
                   <button className="button-primary w-full sm:w-auto" type="button" onClick={() => setIsEditing(true)}>
                     Edit asset
                   </button>
+                  {serverAsset?.asset.id || localDraft?.serverId ? (
+                    <Link
+                      href={`/pm/${encodeURIComponent(serverAsset?.asset.id ?? localDraft?.serverId ?? params.id)}`}
+                      className="button-secondary w-full sm:w-auto"
+                    >
+                      Open PM tracker
+                    </Link>
+                  ) : null}
                   <button
                     className="button-secondary w-full sm:w-auto"
                     type="button"

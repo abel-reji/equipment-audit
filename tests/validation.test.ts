@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { assetDraftSchema, customerSchema, siteSchema } from "@/lib/validation";
+import { assetDraftSchema, customerSchema, pmLogSchema, pmProgramSchema, siteSchema } from "@/lib/validation";
 
 describe("validation schemas", () => {
   it("accepts a valid customer payload", () => {
@@ -18,8 +18,7 @@ describe("validation schemas", () => {
       assetDraftSchema.safeParse({
         id: "asset_1",
         siteId: "site_1",
-        equipmentType: "pump",
-        photoCount: 0
+        equipmentType: "pump"
       }).success
     ).toBe(false);
   });
@@ -36,5 +35,28 @@ describe("validation schemas", () => {
       }).success
     ).toBe(true);
   });
-});
 
+  it("accepts a valid PM program payload", () => {
+    expect(
+      pmProgramSchema.safeParse({
+        assetId: "4f4d2b4d-a9ca-42c4-a0f7-bdb862191001",
+        title: "Quarterly PM",
+        frequencyMonths: 3,
+        startDate: "2026-03-16",
+        instructions: "Inspect bearings and coupling.",
+        checklistTemplate: ["Check oil", "Inspect coupling"]
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects a PM log with an invalid status", () => {
+    expect(
+      pmLogSchema.safeParse({
+        programId: "4f4d2b4d-a9ca-42c4-a0f7-bdb862191001",
+        assetId: "8bb2cd8d-a120-46ca-a76a-3d40dfdbe901",
+        dueAt: "2026-03-16",
+        status: "due"
+      }).success
+    ).toBe(false);
+  });
+});

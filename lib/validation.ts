@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { assetStatusOptions, equipmentTypeOptions, photoTypeOptions } from "@/lib/constants";
+import { checklistResultSchema, pmLogStatusOptions } from "@/lib/pm";
 
 export const signInSchema = z.object({
   email: z.string().email()
@@ -67,4 +68,37 @@ export const draftPhotoSchema = z.object({
   photoType: z.enum(photoTypeOptions),
   fileName: z.string().min(1),
   mimeType: z.string().min(1)
+});
+
+export const pmProgramSchema = z.object({
+  assetId: z.string().uuid(),
+  title: z.string().min(1).max(120),
+  frequencyMonths: z.number().int().min(1).max(120),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  instructions: z.string().max(2000).optional().or(z.literal("")),
+  checklistTemplate: z.array(z.string().min(1).max(160)).max(20).default([])
+});
+
+export const pmProgramPatchSchema = z.object({
+  title: z.string().min(1).max(120).optional(),
+  frequencyMonths: z.number().int().min(1).max(120).optional(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  nextDueAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  instructions: z.string().max(2000).optional().or(z.literal("")),
+  checklistTemplate: z.array(z.string().min(1).max(160)).max(20).optional(),
+  isActive: z.boolean().optional()
+});
+
+export const pmLogSchema = z.object({
+  programId: z.string().uuid(),
+  assetId: z.string().uuid(),
+  dueAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  completedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  status: z.enum(pmLogStatusOptions),
+  performedBy: z.string().max(120).optional().or(z.literal("")),
+  summary: z.string().max(200).optional().or(z.literal("")),
+  workNotes: z.string().max(4000).optional().or(z.literal("")),
+  findings: z.string().max(2000).optional().or(z.literal("")),
+  followUpRequired: z.boolean().default(false),
+  checklistResults: z.array(checklistResultSchema).max(20).default([])
 });

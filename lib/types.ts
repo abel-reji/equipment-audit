@@ -139,6 +139,62 @@ export interface AssetPhotoRecord {
   updated_at: string;
 }
 
+export interface PmProgramRecord {
+  id: string;
+  account_id: string;
+  asset_id: string;
+  title: string;
+  frequency_months: number;
+  start_date: string;
+  next_due_at: string;
+  last_completed_at: string | null;
+  is_active: boolean;
+  instructions: string | null;
+  checklist_template: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PmChecklistResult {
+  label: string;
+  done: boolean;
+  note?: string;
+}
+
+export interface PmLogRecord {
+  id: string;
+  account_id: string;
+  pm_program_id: string;
+  asset_id: string;
+  due_at: string;
+  completed_at: string | null;
+  status: "completed" | "skipped";
+  performed_by: string | null;
+  summary: string | null;
+  work_notes: string | null;
+  findings: string | null;
+  follow_up_required: boolean;
+  checklist_results: PmChecklistResult[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PmDueItem {
+  program: PmProgramRecord;
+  asset: AssetRecord;
+  site: SiteRecord;
+  customer: CustomerRecord | null;
+  lastLog: PmLogRecord | null;
+}
+
+export interface PmAssetDetail {
+  asset: AssetRecord;
+  site: SiteRecord;
+  customer: CustomerRecord | null;
+  program: PmProgramRecord | null;
+  logs: PmLogRecord[];
+}
+
 export interface CachedCustomer {
   id: string;
   serverId?: string;

@@ -24,3 +24,5 @@ export const photoTypeOptions = [
   "piping-context",
   "other"
 ] as const;
+
+export const pmRecentCompletedLimit = 8;
