@@ -31,3 +31,13 @@ export function fileExtensionForMimeType(mimeType: string) {
   return subtype === "jpeg" ? "jpg" : subtype;
 }
 
+export function formatEquipmentTypeLabel(value?: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  return value
+    .split("-")
+    .map((part) => (part ? `${part[0].toUpperCase()}${part.slice(1)}` : part))
+    .join(" ");
+}

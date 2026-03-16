@@ -8,6 +8,7 @@ import { AppShell, ContextBar } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { formatPmFrequency, getPmDueBucket } from "@/lib/pm";
 import type { AssetListItem, PmDueItem, PmLogRecord } from "@/lib/types";
+import { formatEquipmentTypeLabel } from "@/lib/utils";
 
 type RecentLogItem = PmLogRecord & {
   assets?: { equipment_tag?: string | null; equipment_type?: string | null } | null;
@@ -381,6 +382,9 @@ export default function PmPage() {
                                 <div>
                                   <div className="font-semibold text-ink">
                                     {asset.equipment_tag || asset.temporary_identifier || asset.equipment_type}
+                                    {asset.equipment_tag ||
+                                      asset.temporary_identifier ||
+                                      formatEquipmentTypeLabel(asset.equipment_type)}
                                   </div>
                                   <div className="mt-1 text-sm text-slate">
                                     {asset.manufacturer || "Unknown manufacturer"}
@@ -573,7 +577,10 @@ export default function PmPage() {
                       <div>
                         <div className="font-semibold text-ink">{log.summary || "PM logged"}</div>
                         <div className="mt-1 text-sm text-slate">
-                          {log.assets?.equipment_tag || log.assets?.equipment_type || "Asset"} | Due {log.due_at}
+                          {log.assets?.equipment_tag ||
+                            formatEquipmentTypeLabel(log.assets?.equipment_type) ||
+                            "Asset"}{" "}
+                          | Due {log.due_at}
                           {log.completed_at ? ` | Completed ${log.completed_at}` : ""}
                         </div>
                       </div>
@@ -627,7 +634,9 @@ function PmSection({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="font-semibold text-ink">
-                    {item.asset.equipment_tag || item.asset.temporary_identifier || item.asset.equipment_type}
+                    {item.asset.equipment_tag ||
+                      item.asset.temporary_identifier ||
+                      formatEquipmentTypeLabel(item.asset.equipment_type)}
                   </div>
                   <div className="mt-1 text-sm text-slate">
                     {(item.customer?.name ? `${item.customer.name} | ` : "") + item.site.name}

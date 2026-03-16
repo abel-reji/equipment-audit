@@ -8,6 +8,7 @@ import { AppShell, ContextBar } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { formatPmFrequency } from "@/lib/pm";
 import type { PmAssetDetail, PmChecklistResult, PmLogRecord } from "@/lib/types";
+import { formatEquipmentTypeLabel } from "@/lib/utils";
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -248,7 +249,10 @@ export default function PmAssetDetailPage({
             items={[
               { label: "More", href: "/more" },
               { label: "PM Tracker", href: "/pm" },
-              { label: detail.asset.equipment_tag || detail.asset.equipment_type }
+              {
+                label:
+                  detail.asset.equipment_tag || formatEquipmentTypeLabel(detail.asset.equipment_type)
+              }
             ]}
           />
         ) : undefined
@@ -265,7 +269,9 @@ export default function PmAssetDetailPage({
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-moss">Asset</p>
                 <h2 className="mt-2 text-2xl font-semibold text-ink">
-                  {detail.asset.equipment_tag || detail.asset.temporary_identifier || detail.asset.equipment_type}
+                  {detail.asset.equipment_tag ||
+                    detail.asset.temporary_identifier ||
+                    formatEquipmentTypeLabel(detail.asset.equipment_type)}
                 </h2>
                 <p className="mt-2 text-sm text-slate">
                   {(detail.customer?.name ? `${detail.customer.name} | ` : "") + detail.site.name}
