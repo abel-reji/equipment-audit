@@ -135,7 +135,7 @@ function NewAssetPageContent() {
   }, [form.customerId, sites]);
 
   useEffect(() => {
-    if (!selectedSiteId || !sites.length) {
+    if (!selectedSiteId || !sites.length || !customers.length) {
       return;
     }
 
@@ -147,12 +147,25 @@ function NewAssetPageContent() {
       return;
     }
 
+    const matchingCustomer = customers.find(
+      (customer) =>
+        customer.id === matchingSite.customerId ||
+        customer.serverId === matchingSite.customerId ||
+        customer.id === matchingSite.customerServerId ||
+        customer.serverId === matchingSite.customerServerId
+    );
+
     setForm((current) => ({
       ...current,
-      customerId: matchingSite.customerId || matchingSite.customerServerId || current.customerId,
+      customerId:
+        matchingCustomer?.id ??
+        matchingCustomer?.serverId ??
+        matchingSite.customerId ??
+        matchingSite.customerServerId ??
+        current.customerId,
       siteId: matchingSite.id
     }));
-  }, [selectedSiteId, sites]);
+  }, [customers, selectedSiteId, sites]);
 
   async function handlePhotoSelected(files: FileList | null) {
     if (!files?.length) {
