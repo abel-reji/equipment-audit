@@ -14,12 +14,13 @@ export async function GET(request: Request) {
     await requireSessionAccount(supabase);
     const url = new URL(request.url);
     const siteId = url.searchParams.get("siteId");
+    const limit = Number(url.searchParams.get("limit") || "10");
 
     let query = supabase
       .from("assets")
-      .select("*, sites(name)")
+      .select("*, sites(id, name, customer_id), pm_programs(id, is_active)")
       .order("updated_at", { ascending: false })
-      .limit(10);
+      .limit(Number.isFinite(limit) ? Math.max(1, Math.min(limit, 200)) : 10);
 
     if (siteId) {
       query = query.eq("site_id", siteId);

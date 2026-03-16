@@ -79,6 +79,15 @@ export const pmProgramSchema = z.object({
   checklistTemplate: z.array(z.string().min(1).max(160)).max(20).default([])
 });
 
+export const pmProgramBatchSchema = z.object({
+  assetIds: z.array(z.string().uuid()).min(1).max(100),
+  title: z.string().min(1).max(120),
+  frequencyMonths: z.number().int().min(1).max(120),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  instructions: z.string().max(2000).optional().or(z.literal("")),
+  checklistTemplate: z.array(z.string().min(1).max(160)).max(20).default([])
+});
+
 export const pmProgramPatchSchema = z.object({
   title: z.string().min(1).max(120).optional(),
   frequencyMonths: z.number().int().min(1).max(120).optional(),

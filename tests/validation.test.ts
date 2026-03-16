@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { assetDraftSchema, customerSchema, pmLogSchema, pmProgramSchema, siteSchema } from "@/lib/validation";
+import {
+  assetDraftSchema,
+  customerSchema,
+  pmLogSchema,
+  pmProgramBatchSchema,
+  pmProgramSchema,
+  siteSchema
+} from "@/lib/validation";
 
 describe("validation schemas", () => {
   it("accepts a valid customer payload", () => {
@@ -45,6 +52,21 @@ describe("validation schemas", () => {
         startDate: "2026-03-16",
         instructions: "Inspect bearings and coupling.",
         checklistTemplate: ["Check oil", "Inspect coupling"]
+      }).success
+    ).toBe(true);
+  });
+
+  it("accepts a valid batch PM program payload", () => {
+    expect(
+      pmProgramBatchSchema.safeParse({
+        assetIds: [
+          "4f4d2b4d-a9ca-42c4-a0f7-bdb862191001",
+          "8bb2cd8d-a120-46ca-a76a-3d40dfdbe901"
+        ],
+        title: "Quarterly PM",
+        frequencyMonths: 3,
+        startDate: "2026-03-16",
+        checklistTemplate: ["Check oil"]
       }).success
     ).toBe(true);
   });

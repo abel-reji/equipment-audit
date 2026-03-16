@@ -285,3 +285,8 @@ export interface AssetSummary {
   coupling?: AssetCouplingRecord | null;
   photos: Array<AssetPhotoRecord & { signedUrl?: string }>;
 }
+
+export interface AssetListItem extends AssetRecord {
+  sites?: Pick<SiteRecord, "id" | "name" | "customer_id"> | null;
+  pm_programs?: Array<Pick<PmProgramRecord, "id" | "is_active">>;
+}
