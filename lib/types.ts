@@ -258,6 +258,8 @@ export interface DraftPhoto {
   previewUrl?: string;
   uploadStatus: SyncStatus;
   storagePath?: string;
+  verifiedAt?: string;
+  lastError?: string;
   createdAt: string;
 }
 
@@ -283,7 +285,7 @@ export interface AssetSummary {
   customer?: CustomerRecord;
   driver?: AssetDriverRecord | null;
   coupling?: AssetCouplingRecord | null;
-  photos: Array<AssetPhotoRecord & { signedUrl?: string }>;
+  photos: Array<AssetPhotoRecord & { signedUrl?: string; signedUrlError?: string }>;
 }
 
 export interface AssetListItem extends AssetRecord {

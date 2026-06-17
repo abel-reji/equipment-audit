@@ -186,7 +186,8 @@ export async function saveAssetDraft(
   await Promise.all(
     photos.map((photo) =>
       db.draftPhotos.update(photo.id, {
-        uploadStatus: navigator.onLine ? "queued" : "local-only"
+        uploadStatus: navigator.onLine ? "queued" : "local-only",
+        lastError: undefined
       })
     )
   );
@@ -211,6 +212,7 @@ export async function addDraftPhoto(input: {
     mimeType: normalizedFile.mimeType,
     previewUrl: URL.createObjectURL(normalizedFile.blob),
     uploadStatus: "local-only",
+    lastError: undefined,
     createdAt: nowIso()
   };
 

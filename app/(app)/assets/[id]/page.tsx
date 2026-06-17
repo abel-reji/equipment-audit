@@ -196,6 +196,10 @@ export default function AssetDetailPage({
   const detailSiteId = matchedSite?.id ?? localDraft?.siteId;
   const detailSiteName = matchedSite?.name || serverAsset?.site.name || "Local draft site";
   const localDraftPhotosByClientId = new Map(draftPhotos.map((photo) => [photo.id, photo]));
+  const failedDraftPhotoCount = draftPhotos.filter((photo) => photo.uploadStatus === "failed").length;
+  const pendingDraftPhotoCount = draftPhotos.filter((photo) => photo.uploadStatus !== "synced").length;
+  const brokenServerPhotoCount =
+    serverAsset?.photos?.filter((photo) => !photo.signedUrl).length ?? 0;
 
   async function handleSaveEdits() {
     try {
@@ -946,6 +950,29 @@ export default function AssetDetailPage({
             </p>
             <h2 className="mt-2 text-2xl font-semibold text-ink">Field evidence</h2>
 
+            {failedDraftPhotoCount > 0 || brokenServerPhotoCount > 0 || pendingDraftPhotoCount > 0 ? (
+              <div className="mt-4 rounded-3xl bg-mist px-4 py-4 text-sm text-slate">
+                {failedDraftPhotoCount > 0 ? (
+                  <p>
+                    {failedDraftPhotoCount} photo{failedDraftPhotoCount === 1 ? "" : "s"} failed
+                    to sync and should be retried from this device.
+                  </p>
+                ) : null}
+                {brokenServerPhotoCount > 0 ? (
+                  <p>
+                    {brokenServerPhotoCount} synced photo{brokenServerPhotoCount === 1 ? "" : "s"}{" "}
+                    do not have a valid cloud preview right now.
+                  </p>
+                ) : null}
+                {pendingDraftPhotoCount > 0 && failedDraftPhotoCount === 0 ? (
+                  <p>
+                    {pendingDraftPhotoCount} photo{pendingDraftPhotoCount === 1 ? "" : "s"} still
+                    depend on local device storage until sync completes.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {serverAsset?.photos?.map((photo) => (
                 <PhotoCard
@@ -955,6 +982,10 @@ export default function AssetDetailPage({
                   subtitle={
                     photo.signedUrl
                       ? "Synced photo"
+                      : photo.signedUrlError
+                        ? localDraftPhotosByClientId.get(photo.client_uid)?.previewUrl
+                          ? "Cloud copy missing, using local backup"
+                          : "Cloud copy needs re-upload"
                       : localDraftPhotosByClientId.get(photo.client_uid)?.previewUrl
                         ? "Using local backup preview"
                         : "Synced metadata only"

@@ -47,13 +47,14 @@ export async function GET(
 
     const withSignedUrls = await Promise.all(
       (photos ?? []).map(async (photo) => {
-        const { data } = await supabase.storage
+        const { data, error } = await supabase.storage
           .from("asset-photos")
           .createSignedUrl(photo.storage_path, 60 * 60);
 
         return {
           ...photo,
-          signedUrl: data?.signedUrl
+          signedUrl: data?.signedUrl,
+          signedUrlError: error?.message
         };
       })
     );

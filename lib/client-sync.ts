@@ -13,6 +13,10 @@ import type {
 } from "@/lib/types";
 import { fileExtensionForMimeType, nowIso } from "@/lib/utils";
 
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function upsertQueueItem(item: SyncQueueItem) {
   const db = getLocalDb();
   await db.syncQueue.put(item);
@@ -175,6 +179,8 @@ async function uploadPhoto(supabase: SupabaseClient, photo: DraftPhoto) {
     throw uploadError;
   }
 
+  await verifyUploadedPhotoObject(supabase, storagePath);
+
   const response = await fetch(`/api/assets/${photo.assetServerId}/photos`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -191,6 +197,42 @@ async function uploadPhoto(supabase: SupabaseClient, photo: DraftPhoto) {
   }
 
   return storagePath;
+}
+
+async function verifyUploadedPhotoObject(
+  supabase: SupabaseClient,
+  storagePath: string
+) {
+  const pathParts = storagePath.split("/");
+  const fileName = pathParts.pop();
+  const directory = pathParts.join("/");
+
+  if (!fileName || !directory) {
+    throw new Error("Uploaded photo path is invalid");
+  }
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { data, error } = await supabase.storage
+      .from("asset-photos")
+      .list(directory, { search: fileName });
+
+    if (!error) {
+      const exactMatch = data?.find((entry) => entry.name === fileName);
+      const size = Number(
+        (exactMatch as { metadata?: { size?: number } } | undefined)?.metadata?.size ?? 0
+      );
+
+      if (exactMatch && size > 0) {
+        return;
+      }
+    }
+
+    if (attempt < 2) {
+      await delay((attempt + 1) * 800);
+    }
+  }
+
+  throw new Error("Uploaded photo could not be verified in storage");
 }
 
 export async function syncPendingData(supabase: SupabaseClient) {
@@ -304,11 +346,16 @@ export async function syncPendingData(supabase: SupabaseClient) {
             photo.assetServerId = asset.serverId;
           }
 
-          await db.draftPhotos.update(photo.id, { uploadStatus: "syncing" });
+          await db.draftPhotos.update(photo.id, {
+            uploadStatus: "syncing",
+            lastError: undefined
+          });
           const storagePath = await uploadPhoto(supabase, photo);
           await db.draftPhotos.update(photo.id, {
             uploadStatus: "synced",
-            storagePath
+            storagePath,
+            verifiedAt: nowIso(),
+            lastError: undefined
           });
 
           const siblingPhotos = await db.draftPhotos
@@ -353,7 +400,10 @@ export async function syncPendingData(supabase: SupabaseClient) {
         }
 
         if (item.entityType === "photo") {
-          await db.draftPhotos.update(item.entityId, { uploadStatus: "failed" });
+          await db.draftPhotos.update(item.entityId, {
+            uploadStatus: "failed",
+            lastError: error instanceof Error ? error.message : "Unknown sync error"
+          });
         }
       }
     }
