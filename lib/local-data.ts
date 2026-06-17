@@ -201,14 +201,15 @@ export async function addDraftPhoto(input: {
   file: File;
 }) {
   const db = getLocalDb();
+  const normalizedFile = await normalizePhotoFile(input.file);
   const photo: DraftPhoto = {
     id: makeClientId("photo"),
     assetDraftId: input.assetDraftId,
     photoType: input.photoType,
-    blob: input.file,
-    fileName: input.file.name,
-    mimeType: input.file.type || "image/jpeg",
-    previewUrl: URL.createObjectURL(input.file),
+    blob: normalizedFile.blob,
+    fileName: normalizedFile.fileName,
+    mimeType: normalizedFile.mimeType,
+    previewUrl: URL.createObjectURL(normalizedFile.blob),
     uploadStatus: "local-only",
     createdAt: nowIso()
   };
@@ -241,6 +242,76 @@ export function hydrateDraftPhotoPreviews(photos: DraftPhoto[]) {
     ...photo,
     previewUrl: URL.createObjectURL(photo.blob)
   }));
+}
+
+async function normalizePhotoFile(file: File) {
+  if (!file.type.startsWith("image/")) {
+    return {
+      blob: file,
+      fileName: file.name,
+      mimeType: file.type || "image/jpeg"
+    };
+  }
+
+  try {
+    const sourceUrl = URL.createObjectURL(file);
+    try {
+      const image = await loadImageElement(sourceUrl);
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth || image.width;
+      canvas.height = image.naturalHeight || image.height;
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        throw new Error("Canvas context unavailable");
+      }
+
+      context.drawImage(image, 0, 0);
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (nextBlob) => {
+            if (nextBlob) {
+              resolve(nextBlob);
+              return;
+            }
+
+            reject(new Error("Unable to encode normalized image"));
+          },
+          "image/jpeg",
+          0.9
+        );
+      });
+
+      return {
+        blob,
+        fileName: replaceFileExtension(file.name, "jpg"),
+        mimeType: "image/jpeg"
+      };
+    } finally {
+      URL.revokeObjectURL(sourceUrl);
+    }
+  } catch {
+    return {
+      blob: file,
+      fileName: file.name,
+      mimeType: file.type || "image/jpeg"
+    };
+  }
+}
+
+function loadImageElement(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Unable to decode image"));
+    image.src = src;
+  });
+}
+
+function replaceFileExtension(fileName: string, nextExtension: string) {
+  const baseName = fileName.replace(/\.[^.]+$/, "");
+  return `${baseName || "photo"}.${nextExtension}`;
 }
 
 export async function deleteDraftPhoto(photoId: string) {

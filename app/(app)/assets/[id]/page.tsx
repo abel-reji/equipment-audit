@@ -195,6 +195,7 @@ export default function AssetDetailPage({
   );
   const detailSiteId = matchedSite?.id ?? localDraft?.siteId;
   const detailSiteName = matchedSite?.name || serverAsset?.site.name || "Local draft site";
+  const localDraftPhotosByClientId = new Map(draftPhotos.map((photo) => [photo.id, photo]));
 
   async function handleSaveEdits() {
     try {
@@ -950,8 +951,14 @@ export default function AssetDetailPage({
                 <PhotoCard
                   key={photo.id}
                   label={photo.photo_type}
-                  src={photo.signedUrl}
-                  subtitle="Synced photo"
+                  src={photo.signedUrl || localDraftPhotosByClientId.get(photo.client_uid)?.previewUrl}
+                  subtitle={
+                    photo.signedUrl
+                      ? "Synced photo"
+                      : localDraftPhotosByClientId.get(photo.client_uid)?.previewUrl
+                        ? "Using local backup preview"
+                        : "Synced metadata only"
+                  }
                   onDelete={() => void handleDeleteServerPhoto(photo.id)}
                 />
               ))}
