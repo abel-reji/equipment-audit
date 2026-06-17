@@ -9,6 +9,7 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get("code");
   const tokenHash = requestUrl.searchParams.get("token_hash");
   const type = requestUrl.searchParams.get("type") as EmailOtpType | null;
+  let callbackError = "Magic link sign-in failed. Request a new link and open it in the same browser on the same device.";
 
   const redirectUrl = new URL("/home", request.url);
   const response = NextResponse.redirect(redirectUrl);
@@ -37,6 +38,8 @@ export async function GET(request: Request) {
     if (!error) {
       return response;
     }
+
+    callbackError = error.message;
   }
 
   if (tokenHash && type) {
@@ -48,7 +51,14 @@ export async function GET(request: Request) {
     if (!error) {
       return response;
     }
+
+    callbackError = error.message;
   }
 
-  return NextResponse.redirect(new URL("/sign-in?error=auth_callback_failed", request.url));
+  return NextResponse.redirect(
+    new URL(
+      `/sign-in?error=auth_callback_failed&message=${encodeURIComponent(callbackError)}`,
+      request.url
+    )
+  );
 }

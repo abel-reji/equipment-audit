@@ -23,6 +23,8 @@ function SignInPageContent() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [message, setMessage] = useState("");
+  const callbackError = searchParams.get("error");
+  const callbackMessage = searchParams.get("message");
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
@@ -33,6 +35,18 @@ function SignInPageContent() {
       }
     });
   }, [router, searchParams]);
+
+  useEffect(() => {
+    if (callbackError !== "auth_callback_failed") {
+      return;
+    }
+
+    setStatus("error");
+    setMessage(
+      callbackMessage ||
+        "Magic link sign-in failed. Request a new link and open it in the same browser on the same device."
+    );
+  }, [callbackError, callbackMessage]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -78,6 +92,10 @@ function SignInPageContent() {
           <p className="mt-4 text-sm text-slate">
             Sign in with a magic link, then use the app on your phone or iPad to
             capture assets, queue photos, and sync once the network is reliable.
+          </p>
+          <p className="mt-3 text-xs text-slate">
+            Request the link on the same device and open it in the same browser session.
+            Opening a link that was requested on another device can fail.
           </p>
         </div>
 
