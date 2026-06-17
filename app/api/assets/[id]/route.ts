@@ -59,6 +59,19 @@ export async function GET(
       })
     );
 
+    const shouldResolvePartial =
+      asset.capture_status === "partial" &&
+      withSignedUrls.length > 0 &&
+      withSignedUrls.every((photo) => Boolean(photo.signedUrl));
+
+    if (shouldResolvePartial) {
+      await supabase
+        .from("assets")
+        .update({ capture_status: "synced" })
+        .eq("id", params.id);
+      asset.capture_status = "synced";
+    }
+
     return NextResponse.json({
       asset,
       site: asset.sites,

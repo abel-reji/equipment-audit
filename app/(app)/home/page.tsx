@@ -88,21 +88,28 @@ export default function HomePage() {
         .map((asset) => [asset.serverId as string, asset])
     );
 
-    const mergedServerAssets = serverAssets.map((asset) => ({
-      id: localByServerId.get(asset.id)?.id ?? asset.id,
-      href: `/assets/${encodeURIComponent(asset.id)}`,
-      equipmentType: asset.equipment_type,
-      equipmentTag:
-        localByServerId.get(asset.id)?.equipmentTag ?? asset.equipment_tag ?? undefined,
-      manufacturer:
-        localByServerId.get(asset.id)?.manufacturer ??
-        asset.manufacturer ??
-        localByServerId.get(asset.id)?.temporaryIdentifier ??
-        asset.temporary_identifier ??
-        undefined,
-      updatedAt: localByServerId.get(asset.id)?.updatedAt ?? asset.updated_at,
-      status: localByServerId.get(asset.id)?.captureStatus ?? asset.capture_status
-    }));
+    const mergedServerAssets = serverAssets.map((asset) => {
+      const localAsset = localByServerId.get(asset.id);
+      const localStatus = localAsset?.captureStatus;
+
+      return {
+        id: localAsset?.id ?? asset.id,
+        href: `/assets/${encodeURIComponent(asset.id)}`,
+        equipmentType: asset.equipment_type,
+        equipmentTag: localAsset?.equipmentTag ?? asset.equipment_tag ?? undefined,
+        manufacturer:
+          localAsset?.manufacturer ??
+          asset.manufacturer ??
+          localAsset?.temporaryIdentifier ??
+          asset.temporary_identifier ??
+          undefined,
+        updatedAt: localAsset?.updatedAt ?? asset.updated_at,
+        status:
+          localStatus && !(localStatus === "partial" && asset.capture_status === "synced")
+            ? localStatus
+            : asset.capture_status
+      };
+    });
 
     const localOnlyAssets = localAssets
       .filter(

@@ -31,7 +31,49 @@ export async function GET(request: Request) {
       throw error;
     }
 
-    return NextResponse.json({ assets: data });
+    const assets = data ?? [];
+    const assetIds = assets.map((asset) => asset.id);
+    let photoCounts = new Map<string, number>();
+
+    if (assetIds.length) {
+      const { data: photos, error: photoError } = await supabase
+        .from("asset_photos")
+        .select("asset_id")
+        .in("asset_id", assetIds);
+
+      if (photoError) {
+        throw photoError;
+      }
+
+      photoCounts = new Map<string, number>();
+      for (const photo of photos ?? []) {
+        photoCounts.set(photo.asset_id, (photoCounts.get(photo.asset_id) ?? 0) + 1);
+      }
+    }
+
+    const stalePartialIds = assets
+      .filter(
+        (asset) =>
+          asset.capture_status === "partial" && (photoCounts.get(asset.id) ?? 0) > 0
+      )
+      .map((asset) => asset.id);
+
+    if (stalePartialIds.length) {
+      await supabase
+        .from("assets")
+        .update({ capture_status: "synced" })
+        .in("id", stalePartialIds);
+    }
+
+    return NextResponse.json({
+      assets: assets.map((asset) => ({
+        ...asset,
+        capture_status:
+          asset.capture_status === "partial" && (photoCounts.get(asset.id) ?? 0) > 0
+            ? "synced"
+            : asset.capture_status
+      }))
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unable to load assets" },

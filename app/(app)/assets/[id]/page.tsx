@@ -142,6 +142,21 @@ export default function AssetDetailPage({
       if (response.ok) {
         const payload = await response.json();
         setServerAsset(payload);
+        if (draft && draft.captureStatus === "partial" && payload.asset.capture_status === "synced") {
+          await db.assetDrafts.update(draft.id, {
+            captureStatus: "synced",
+            syncedAt: new Date().toISOString()
+          });
+          setLocalDraft((current) =>
+            current
+              ? {
+                  ...current,
+                  captureStatus: "synced",
+                  syncedAt: new Date().toISOString()
+                }
+              : current
+          );
+        }
         setForm({
           siteId: draft?.siteId || payload.site.id,
           equipmentType: draft?.equipmentType || payload.asset.equipment_type,
