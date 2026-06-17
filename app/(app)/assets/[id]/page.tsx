@@ -10,7 +10,12 @@ import { EmptyState } from "@/components/empty-state";
 import { SyncStatusPill } from "@/components/sync-status-pill";
 import { assetStatusOptions, equipmentTypeOptions } from "@/lib/constants";
 import { getLocalDb } from "@/lib/local-db";
-import { deleteAssetDraft, deleteDraftPhoto, updateAssetDraft } from "@/lib/local-data";
+import {
+  deleteAssetDraft,
+  deleteDraftPhoto,
+  hydrateDraftPhotoPreviews,
+  updateAssetDraft
+} from "@/lib/local-data";
 import type {
   AssetStatus,
   AssetCouplingDetails,
@@ -103,7 +108,9 @@ export default function AssetDetailPage({
 
       if (draft) {
         setLocalDraft(draft);
-        const photos = await db.draftPhotos.where("assetDraftId").equals(draft.id).toArray();
+        const photos = hydrateDraftPhotoPreviews(
+          await db.draftPhotos.where("assetDraftId").equals(draft.id).toArray()
+        );
         setDraftPhotos(photos);
         setForm({
           siteId: draft.siteId,

@@ -230,8 +230,17 @@ export async function addDraftPhoto(input: {
 export async function getDraftAssetWithPhotos(assetDraftId: string) {
   const db = getLocalDb();
   const draft = await db.assetDrafts.get(assetDraftId);
-  const photos = await db.draftPhotos.where("assetDraftId").equals(assetDraftId).toArray();
+  const photos = hydrateDraftPhotoPreviews(
+    await db.draftPhotos.where("assetDraftId").equals(assetDraftId).toArray()
+  );
   return { draft, photos };
+}
+
+export function hydrateDraftPhotoPreviews(photos: DraftPhoto[]) {
+  return photos.map((photo) => ({
+    ...photo,
+    previewUrl: URL.createObjectURL(photo.blob)
+  }));
 }
 
 export async function deleteDraftPhoto(photoId: string) {
