@@ -201,6 +201,10 @@ export default function AssetDetailPage({
   const detailAsset = serverAsset?.asset;
   const detailStatus = detailAsset?.capture_status ?? localDraft?.captureStatus ?? "queued";
   const detailLocation = getDisplayedLocation(detailAsset, localDraft);
+  const selectedFormSite = sites.find(
+    (site) => site.id === form.siteId || site.serverId === form.siteId
+  );
+  const normalizedFormSiteId = selectedFormSite?.id ?? form.siteId;
   const matchedSite = sites.find(
     (site) =>
       site.id === localDraft?.siteId ||
@@ -566,7 +570,7 @@ export default function AssetDetailPage({
                 <FormField label="Site">
                   <select
                     className="field"
-                    value={form.siteId}
+                    value={normalizedFormSiteId}
                     onChange={(event) =>
                       setForm((current) => ({ ...current, siteId: event.target.value }))
                     }
