@@ -53,6 +53,8 @@ interface AssetDetailFormState {
   serial: string;
   serviceApplication: string;
   status: AssetStatus;
+  latitude: string;
+  longitude: string;
   temporaryIdentifier: string;
   quickNote: string;
   driver: AssetDriverDetails;
@@ -90,6 +92,8 @@ export default function AssetDetailPage({
     serial: "",
     serviceApplication: "",
     status: "unknown",
+    latitude: "",
+    longitude: "",
     temporaryIdentifier: "",
     quickNote: "",
     driver: emptyDriver,
@@ -121,6 +125,12 @@ export default function AssetDetailPage({
           serial: draft.serial || "",
           serviceApplication: draft.serviceApplication || "",
           status: draft.status || "unknown",
+          latitude:
+            draft.latitude === undefined || draft.latitude === null ? "" : String(draft.latitude),
+          longitude:
+            draft.longitude === undefined || draft.longitude === null
+              ? ""
+              : String(draft.longitude),
           temporaryIdentifier: draft.temporaryIdentifier || "",
           quickNote: draft.quickNote || "",
           driver: {
@@ -167,6 +177,18 @@ export default function AssetDetailPage({
           serviceApplication:
             draft?.serviceApplication || payload.asset.service_application || "",
           status: draft?.status || payload.asset.status || "unknown",
+          latitude:
+            draft?.latitude !== undefined && draft?.latitude !== null
+              ? String(draft.latitude)
+              : payload.asset.latitude !== null && payload.asset.latitude !== undefined
+                ? String(payload.asset.latitude)
+                : "",
+          longitude:
+            draft?.longitude !== undefined && draft?.longitude !== null
+              ? String(draft.longitude)
+              : payload.asset.longitude !== null && payload.asset.longitude !== undefined
+                ? String(payload.asset.longitude)
+                : "",
           temporaryIdentifier:
             draft?.temporaryIdentifier || payload.asset.temporary_identifier || "",
           quickNote: draft?.quickNote || payload.asset.quick_note || "",
@@ -225,6 +247,8 @@ export default function AssetDetailPage({
       setSaveError("");
       const localId = localDraft?.id ?? params.id;
       const selectedSite = sites.find((site) => site.id === form.siteId || site.serverId === form.siteId);
+      const normalizedLatitude = parseCoordinateInput(form.latitude, "latitude");
+      const normalizedLongitude = parseCoordinateInput(form.longitude, "longitude");
       const nextLocalStatus =
         localDraft?.serverId || serverAsset?.asset.id
           ? navigator.onLine
@@ -243,6 +267,8 @@ export default function AssetDetailPage({
           serial: form.serial,
           serviceApplication: form.serviceApplication,
           status: form.status,
+          latitude: normalizedLatitude,
+          longitude: normalizedLongitude,
           temporaryIdentifier: form.temporaryIdentifier,
           quickNote: form.quickNote,
           driver: form.driver,
@@ -265,6 +291,8 @@ export default function AssetDetailPage({
             serial: form.serial,
             serviceApplication: form.serviceApplication,
             status: form.status,
+            latitude: normalizedLatitude,
+            longitude: normalizedLongitude,
             temporaryIdentifier: form.temporaryIdentifier,
             quickNote: form.quickNote,
             driver: form.driver,
@@ -290,6 +318,8 @@ export default function AssetDetailPage({
               serial: form.serial,
               serviceApplication: form.serviceApplication,
               status: form.status,
+              latitude: normalizedLatitude,
+              longitude: normalizedLongitude,
               temporaryIdentifier: form.temporaryIdentifier,
               quickNote: form.quickNote,
               driver: form.driver,
@@ -312,6 +342,8 @@ export default function AssetDetailPage({
                 serial: form.serial || null,
                 service_application: form.serviceApplication || null,
                 status: form.status,
+                latitude: normalizedLatitude ?? null,
+                longitude: normalizedLongitude ?? null,
                 temporary_identifier: form.temporaryIdentifier || null,
                 quick_note: form.quickNote || null
               },
@@ -669,6 +701,28 @@ export default function AssetDetailPage({
                     ))}
                   </select>
                 </FormField>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField label="Latitude">
+                    <input
+                      className="field"
+                      inputMode="decimal"
+                      value={form.latitude}
+                      onChange={(event) =>
+                        setForm((current) => ({ ...current, latitude: event.target.value }))
+                      }
+                    />
+                  </FormField>
+                  <FormField label="Longitude">
+                    <input
+                      className="field"
+                      inputMode="decimal"
+                      value={form.longitude}
+                      onChange={(event) =>
+                        setForm((current) => ({ ...current, longitude: event.target.value }))
+                      }
+                    />
+                  </FormField>
+                </div>
                 <FormField label="Temporary ID">
                   <input
                     className="field"
@@ -1178,6 +1232,31 @@ function formatLocationSummary(location: CapturedLocation | null) {
   const capturedAt = location.capturedAt ? ` | ${formatRelativeDate(location.capturedAt)}` : "";
 
   return `${latitude}, ${longitude}${accuracy}${capturedAt}`;
+}
+
+function parseCoordinateInput(
+  value: string,
+  axis: "latitude" | "longitude"
+) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Enter a valid ${axis}.`);
+  }
+
+  if (axis === "latitude" && (parsed < -90 || parsed > 90)) {
+    throw new Error("Latitude must be between -90 and 90.");
+  }
+
+  if (axis === "longitude" && (parsed < -180 || parsed > 180)) {
+    throw new Error("Longitude must be between -180 and 180.");
+  }
+
+  return parsed;
 }
 
 function formatLocationError(error: unknown) {
